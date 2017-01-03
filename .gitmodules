@@ -1,0 +1,3 @@
+[submodule "modules/BDS.js"]
+	path = modules/BDS.js
+	url = https://github.com/Bryce-Summers/BDS.js.git

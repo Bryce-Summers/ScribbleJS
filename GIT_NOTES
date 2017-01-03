@@ -1,0 +1,6 @@
+
+# Add a submodule to a repository.
+git submodule add [URL]
+
+# Initialize the submodule and its tree of submodules.
+git submodule update --init --recursive

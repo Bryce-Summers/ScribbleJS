@@ -1,0 +1,32 @@
+{
+  "name": "ScribbleJS",
+  "version": "1.0.0",
+  "description": "Bryce Summers Scribble JS Library.",
+  "main": "Gruntfile.js",
+  "scripts": {
+    "test": "hello"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Bryce-Summers/ScribbleJS.git"
+  },
+  "keywords": [
+    "bryce",
+    "data",
+    "structures",
+    "algorithms"
+  ],
+  "author": "Bryce Summers",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Bryce-Summers/ScribbleJS/issues"
+  },
+  "homepage": "https://github.com/Bryce-Summers/ScribbleJS#readme",
+  "devDependencies": {
+    "grunt": "^1.0.1",
+    "grunt-contrib-concat": "^1.0.1",
+    "grunt-contrib-uglify": "^2.0.0",
+    "grunt-contrib-watch": "^1.0.0",
+    "grunt-include-source": "^1.0.0"
+  }
+}
