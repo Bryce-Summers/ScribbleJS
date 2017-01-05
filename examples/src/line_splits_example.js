@@ -7,13 +7,8 @@
 
 function main()
 {
-    canvas = document.getElementById("theCanvas");
-    ctx = canvas.getContext("2d");
-    // Draw white Lines.
-    ctx.strokeStyle = '#ffffff';
 
-    var w = 500
-    var h = 500
+    G = new Canvas_Drawer()
 
     p0 = new SCRIB.Point(0, 140);
     p1 = new SCRIB.Point(500, 250);
@@ -57,55 +52,12 @@ function main()
     for(var i = 0; i < split_lines.length; i++)
     {
         line = split_lines[i];
-        drawArrow(line, 25);
+        G.drawArrow(line, 25);
     }
 
 }
 
-// Input: SCRIB.Line
-function drawArrow(line, size)
-{
 
-    drawScribLine(line)
-
-    var p1 = line.p1
-    var p2 = line.p2
-
-    var len = line.offset.norm();
-        
-    var par_x = (p1.x - p2.x)/len
-    var par_y = (p1.y - p2.y)/len
-    
-    // /2 provides slant.
-    var perp_x = -par_y*size/3
-    var perp_y =  par_x*size/3
-    
-    par_x *= size
-    par_y *= size
-            
-    // Arrow head.
-    drawLine(p2.x, p2.y, p2.x + par_x + perp_x, p2.y + par_y + perp_y)
-    drawLine(p2.x, p2.y, p2.x + par_x - perp_x, p2.y + par_y - perp_y)
-
-}
- 
-// Input: SCRIB.Line
-function drawScribLine(line)
-{
-    
-    p1 = line.p1
-    p2 = line.p2
-
-    drawLine(p1.x, p1.y, p2.x, p2.y);
-}
-
-function drawLine(x1, y1, x2, y2)
-{
-
-    ctx.moveTo(x1, y1);
-    ctx.lineTo(x2, y2);
-    ctx.stroke();
-}
 
 
 // Run Example.
