@@ -159,8 +159,21 @@ class SCRIB.Line
         the points are not on strictly opposite sides of the line.
         If the product is 0, then at least one of the points is on the line not containing the points.
         ###
-        
-        return a1*a2 <= 0 && b1*b2 <= 0;
+        ###
+        epsilon = .001
+        a_on = (Math.abs(a1) < epsilon or Math.abs(a2) < epsilon)
+        b_on = (Math.abs(b1) < epsilon or Math.abs(b2) < epsilon)
+        ###
+
+        a_opposites = a1*a2 <= 0
+        b_opposites = b1*b2 <= 0
+
+        return true if (a_opposites and b_opposites) #or
+        ###
+                       (a_opposites and b_on) or
+                       (a_on and b_opposites)
+        ###
+
     ###
     Line -> void.
     ###

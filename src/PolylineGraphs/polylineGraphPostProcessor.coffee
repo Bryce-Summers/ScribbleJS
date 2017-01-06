@@ -21,8 +21,20 @@ The PolylineGraphPostProcessor class.
 # Convinent naming convention, more so for our benifit than the machine's since javscript is dynamically typed.
 
 typedef SCRIB.Polyline[]  <-> Face_Vector_Format
-typedef int[]                  <-> Int_Vector_Format
-typedef {}                     <-> ID_Set
+typedef int[]             <-> Int_Vector_Format
+typedef {}                <-> ID_Set
+###
+
+###
+
+Tested Features:
+    convert_to_face_infos()
+
+Untested Features:
+    clipTails()
+    mergeFaces()
+    BDS.BVH2D = generateBVH() [requires HalfedgeMesh]
+
 ###
 
 class SCRIB.Point_Info
@@ -36,7 +48,7 @@ class SCRIB.Point_Info
     # @halfedge is only defined for HalfedgeGraph based souce embeddings.
     ###
 
-    # SCRIB.Point, int, SCRIB.halfedge
+    # BDS.Point, int, SCRIB.halfedge
     constructor: (@point, @id, @halfedge) ->
 
 
@@ -49,7 +61,7 @@ class SCRIB.Face_Info
 
         # SCRIB.Point_Info
         @points = []
-        @polyline = new SCRIB.Polyline(true) # Closed.
+        @polyline = new BDS.Polyline(true) # Closed.
 
         # Contains a set of all faces contributing to this unioned face.
         @faces_id_set = new Set()
@@ -86,8 +98,8 @@ class SCRIB.PolylineGraphPostProcessor
     
         @_graph = null
 
-        # Face point vector format.
-        # SCRIB.Polyline[]
+        # SCRIB.Face_Info[]
+        # This can be loaded for algorithms such as tail clipping.
         @_face_vector = null
 
     # -- Data Structure Conversion.
@@ -232,7 +244,7 @@ class SCRIB.PolylineGraphPostProcessor
         for index in [0...len]
 
             unclipped_face = input[index]
-            clipped_face   = @clipTails(unclipped_face)
+            clipped_face   = @_clipTails(unclipped_face)
 
             # Append only non trivial faces to the output.
             if clipped_face.size() > 0
@@ -244,7 +256,7 @@ class SCRIB.PolylineGraphPostProcessor
     # Returns a copy of the single input face without any trivial area contiguous subfaces. (Tails)
     # May return a 0 point polyline if the input line is non-intersecting.
     # SCRIB.Face_Info -> SCRIB.Face_Info
-    clipTails: (input) ->
+    _clipTails: (input) ->
 
         output = new SCRIB.Face_Info()
 
@@ -536,3 +548,10 @@ class SCRIB.PolylineGraphPostProcessor
         vertex      = halfedge.vertex
         vertex_data = vertex.data
         return new SCRIB.Point_Info(vertex_data.point, vertex.ID, halfedge)
+
+
+    #BDS.BVH2D = generateBVH() [requires HalfedgeMesh]
+    generateBVH: () ->
+
+        @_graph
+

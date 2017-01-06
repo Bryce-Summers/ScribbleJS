@@ -8,9 +8,9 @@
 function Canvas_Drawer()
 {
     canvas = document.getElementById("theCanvas");
-    ctx = canvas.getContext("2d");
+    this.ctx = canvas.getContext("2d");
     // Draw white Lines.
-    ctx.strokeStyle = '#ffffff';
+    this.ctx.strokeStyle = '#ffffff';
 
     // FIXME: Get the actual dimensions of the canvas.
     w = 500;
@@ -19,6 +19,37 @@ function Canvas_Drawer()
 
 Canvas_Drawer.prototype =
 {
+
+    // #rrggbb (number)
+    strokeColor(color)
+    {
+        str = color.toString(16);
+        this.ctx.strokeStyle = '#' + str;
+    },
+
+    // #rrggbb (number)
+    fillColor(color)
+    {
+        str = color.toString(16);
+        this.ctx.fillStyle = '#' + str;
+    },
+
+    randomColor()
+    {
+        red   = Math.random()*256
+        green = Math.random()*256
+        blue  = Math.random()*256
+
+        red   = Math.floor(red)
+        green = Math.floor(green)
+        blue  = Math.floor(blue)
+
+        // Pack the red, green, and blue components into a hex integer color.
+        red   = red   << 16
+        green = green << 8
+
+        return red + green + blue
+    },
 
     // Input: SCRIB.Line
     drawArrow(line, size)
@@ -59,7 +90,7 @@ Canvas_Drawer.prototype =
 
     drawLine(x1, y1, x2, y2)
     {
-
+        ctx = this.ctx;
         ctx.moveTo(x1, y1);
         ctx.lineTo(x2, y2);
         ctx.stroke();
@@ -68,12 +99,32 @@ Canvas_Drawer.prototype =
     // Draws a SCRIB.Polyline.
     drawPolyline(polyline)
     {
+        this.drawPolygon(polyline, true, false);
+    },
+
+    drawPolygon(polyline, drawStroke, drawFill)
+    {
+
+        if(drawFill === undefined)
+        {
+            drawFill = true;
+        }
+
+        if(drawStroke === undefined)
+        {
+            drawStroke = true;
+        }
+
         var len = polyline.size();
 
         if(len < 2)
         {
             return;
         }
+
+        ctx = this.ctx;
+
+        ctx.beginPath();
 
         var p0 = polyline.getPoint(0);
         ctx.moveTo(p0.x, p0.y);
@@ -83,7 +134,49 @@ Canvas_Drawer.prototype =
             var p = polyline.getPoint(i);
             ctx.lineTo(p.x, p.y);
         }
-        ctx.stroke();
-    },
 
+        if(polyline.isClosed())
+        {
+            ctx.closePath();
+        }
+
+        if(drawStroke)
+        {
+           ctx.stroke();
+        }
+
+        if(drawFill)
+        {
+            ctx.fill();
+        }
+
+        
+    }
+
+}
+
+function Geometry_Generator()
+{
+
+}
+
+Geometry_Generator.prototype =
+{
+    spiral()
+    {
+        line = new BDS.Polyline(false);
+        var len = 100;
+        var max_radius = 200;
+        var revolutions = 3;
+        for(var i = 0; i <= len; i++)
+        {
+            var r = i*max_radius/len;
+            var angle = i*Math.PI*2*revolutions/len + .01;
+            var x = 250 + r*Math.cos(angle);
+            var y = 250 + r*Math.sin(angle);
+            line.addPoint(new BDS.Point(x, y));
+        }
+
+        return line;
+    },
 }

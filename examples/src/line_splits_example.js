@@ -10,11 +10,11 @@ function main()
 
     G = new Canvas_Drawer()
 
-    p0 = new SCRIB.Point(0, 140);
-    p1 = new SCRIB.Point(500, 250);
+    p0 = new BDS.Point(0, 140);
+    p1 = new BDS.Point(500, 250);
 
-    p2 = new SCRIB.Point(0, 360);
-    p3 = new SCRIB.Point(500, 360);
+    p2 = new BDS.Point(0, 360);
+    p3 = new BDS.Point(500, 360);
 
     points = [p0, p1, p2, p3]
 
@@ -24,7 +24,7 @@ function main()
         var x = i*w/len;
         var y = 250 + 200*Math.cos(i*w/len*5);
 
-        points.push(new SCRIB.Point(x, y))
+        points.push(new BDS.Point(x, y))
 
     }
 
@@ -56,8 +56,6 @@ function main()
     }
 
 }
-
-
 
 
 // Run Example.

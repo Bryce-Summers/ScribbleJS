@@ -59,7 +59,7 @@ class SCRIB.PolylineGraphEmbedder
                 @_useFastAlgo = true
 
             # The canonical collection of points at their proper indices.
-            # SCRIB.Point[]
+            # BDS.Point[]
             @_points = []
 
             # The original input lines.
@@ -212,7 +212,7 @@ class SCRIB.PolylineGraphEmbedder
         ###
         New Constructed data Fields:
         //The canonical collection of points at their proper indices.
-        SCRIB.Point[] @_points
+        BDS.Point[] @_points
         // The original input lines.
         SCRIB.Line[] @_lines_initial
         ###
@@ -228,7 +228,7 @@ class SCRIB.PolylineGraphEmbedder
             for i in [0...len] by 1
             
                 # FIXME: I might no any of these vertical line prevention techniques.
-                input_point = polyline.getPoint(i).add(new SCRIB.Point(Math.random(), Math.random()))
+                input_point = polyline.getPoint(i)#.add(new BDS.Point(Math.random(), Math.random()))
 
                 # A Paranoid vertical line prevention technique.
                 if (offset > 0 or i > 0) and @_points[offset + i - 1].x == input_point.x
@@ -391,6 +391,8 @@ class SCRIB.PolylineGraphEmbedder
                 
 
                 # -- We store outgoing halfedges for each vertex in a temporary outgoing edges structure.
+                debugger if halfedge == undefined or twin == undefined
+
                 vert_data.outgoing_edges.push(halfedge)
                 vert_twin_data.outgoing_edges.push(twin)
 
@@ -410,6 +412,8 @@ class SCRIB.PolylineGraphEmbedder
                 vert_data      = iter.next().data
                 outgoing_edges = vert_data.outgoing_edges
                 @_sort_outgoing_edges(outgoing_edges)
+
+            return
 
 
         # Step 4 helper function.
@@ -437,7 +441,7 @@ class SCRIB.PolylineGraphEmbedder
 
             # Populate the angles array with absolute relative angles.
 
-            for edge in outgoin_edges
+            for edge in outgoing_edges
             
                 # SCRIB.Halfedge's
                 hedge_out = edge
@@ -454,7 +458,7 @@ class SCRIB.PolylineGraphEmbedder
 
             # Insertion sort based on the angles.
             for i in [0...len] by 1
-                for i2 in [i - 1 .. 0]#for (i2 = i - 1; i2 >= 0; i2--)
+                for i2 in [i - 1 .. 0] by -1#for (i2 = i - 1; i2 >= 0; i2--)
 
                     i1 = i2 + 1
 
@@ -465,13 +469,15 @@ class SCRIB.PolylineGraphEmbedder
 
                     # -- Swap at indices i2 and i2 + 1.
                     # Keep the angle measurements synchronized with the halfedges.
-                    temp_f = angles[i2]
+                    temp_f     = angles[i2]
                     angles[i2] = angles[i1]
                     angles[i1] = temp_f
 
                     temp_he = outgoing_edges[i2]
                     outgoing_edges[i2] = outgoing_edges[i1]
                     outgoing_edges[i1] = temp_he
+
+                    debugger if outgoing_edges[i1] == undefined or outgoing_edges[i2] == undefined
 
             return
 
@@ -533,6 +539,10 @@ class SCRIB.PolylineGraphEmbedder
                 for i in [0...degree] by 1
                 
                     hedge_out = outgoing_edges[i]
+
+                    if hedge_out == undefined or hedge_out.twin == undefined
+                        debugger
+
                     hedge_in  = hedge_out.twin
 
                     # This combined with the sort order determines the consistent orientation.

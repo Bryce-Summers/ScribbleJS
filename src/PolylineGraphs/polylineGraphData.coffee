@@ -65,7 +65,7 @@ class SCRIB.Vertex_Data
 
     constructor: (@vertex) ->
         
-        # SCRIB.Point
+        # BDS.Point
         @point  = null
         @marked = false
         @tail_point = false

@@ -1,15 +1,13 @@
 /*
- * face_finding_example.js
- * Written by Bryce Summers on 1 - 4 - 2017.
+ * faces bvh example.js
+ * Written by Bryce Summers on 1 - 5 - 2017.
  *
- * Purpose: Demonstrates and tests my Polyline Set to HalfedgeGraph Embedding code.
+ * Purpose: Demonstrates generating an Axis Aligned Bounding Box Volume Hierarchy from segmented faces.
  */
 
 function main()
 {
-
     G = new Canvas_Drawer();
-
     
     p0 = new BDS.Point(0, 250);
     p1 = new BDS.Point(500, 250);
@@ -26,7 +24,7 @@ function main()
 
     // Embed the polylines within a graph.
     var embedder = new SCRIB.PolylineGraphEmbedder();
-    var graph = embedder.embedPolylineArray([line1, line2]);
+    var graph    = embedder.embedPolylineArray([line1, line2]);
 
     // Now Use a Post Processor to derive easy to work with structures which may be drawn to the screen.
     var postProcessor = new SCRIB.PolylineGraphPostProcessor();
@@ -38,6 +36,13 @@ function main()
 
     // Draw these faces to the screen.
     drawFaceInfoArray(G, faces);
+
+    // Generate a BVH.
+    BVH = new BDS.BVH2D(facesToPolylines(faces));
+
+    boxes = BVH.toPolylines();
+
+    drawPolyLine_Array(G, boxes);
 
 }
 
@@ -55,9 +60,34 @@ function drawFaceInfoArray(G, face_info_array)
         {
 
            G.fillColor(G.randomColor());
-            G.drawPolygon(face.polyline);
+           G.drawPolygon(face.polyline);
         }
     }
+}
+
+function drawPolyLine_Array(G, polylines)
+{
+    // Red Strokes.
+    G.strokeColor(0xff0000);
+
+    var len = polylines.length;
+    for(var i = 0; i < len; i++)
+    {
+        G.drawPolyline(polylines[i]);
+    }
+}
+
+function facesToPolylines(face_infos)
+{
+    var output = [];
+
+    var len = face_infos.length;
+    for(var i = 0; i < len; i++)
+    {
+        output.push(face_infos[i].polyline);
+    }
+
+    return output;
 }
 
 // Run Example.
