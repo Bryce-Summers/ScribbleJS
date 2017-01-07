@@ -18,7 +18,7 @@ The PolylineGraphPostProcessor class.
 ###
 
 ###
-# Convinent naming convention, more so for our benifit than the machine's since javscript is dynamically typed.
+# Convinent naming convention, more so for our benefit than the machine's since javscript is dynamically typed.
 
 typedef SCRIB.Polyline[]  <-> Face_Vector_Format
 typedef int[]             <-> Int_Vector_Format
@@ -34,6 +34,10 @@ Untested Features:
     clipTails()
     mergeFaces()
     BDS.BVH2D = generateBVH() [requires HalfedgeMesh]
+
+    # Splits the current embedding by the given polyline.
+    embedAnotherPolyline(polyLine)
+    eraseEdgesInCircle()
 
 ###
 
@@ -54,7 +58,8 @@ class SCRIB.Point_Info
 
 class SCRIB.Face_Info
 
-    constructor: () ->
+    # Input is a SCRIB.Face
+    constructor: (@face) ->
 
         # SCRIB.Face_Info[]
         @holes  = []
@@ -62,11 +67,13 @@ class SCRIB.Face_Info
         # SCRIB.Point_Info
         @points = []
         @polyline = new BDS.Polyline(true) # Closed.
+        @polyline.setAssociatedData(@)
 
         # Contains a set of all faces contributing to this unioned face.
         @faces_id_set = new Set()
 
         @complemented = false
+
 
     size: () ->
         return @points.length
@@ -100,7 +107,11 @@ class SCRIB.PolylineGraphPostProcessor
 
         # SCRIB.Face_Info[]
         # This can be loaded for algorithms such as tail clipping.
+        # If this is loaded, then algorithms such as polyline adding and area edge erasing will preserve the face_info objects.
         @_face_vector = null
+
+        @_facebvh = null
+        @_edgebvh = null
 
     # -- Data Structure Conversion.
     # () -> SCRIB.Face_Info[]
@@ -115,7 +126,7 @@ class SCRIB.PolylineGraphPostProcessor
 
             face = iter.next()
 
-            face_output = new SCRIB.Face_Info(true) # Closed Polyline.
+            face_output = new SCRIB.Face_Info(face) # Closed Polyline.
             face_output.faces_id_set.add(face.id)
 
             starting_half_edge = face.halfedge
@@ -550,8 +561,28 @@ class SCRIB.PolylineGraphPostProcessor
         return new SCRIB.Point_Info(vertex_data.point, vertex.ID, halfedge)
 
 
+    # regenerates the bounding volume hierarchies again from scratch.
     #BDS.BVH2D = generateBVH() [requires HalfedgeMesh]
-    generateBVH: () ->
+    _generateBVH: () ->
 
         @_graph
+        @_facebvh = null
+        @_edgebvh = null
+
+    # Splits the current embedding by the given polyline.
+    # Updates the internal line and face bvh's
+    # BDS.Polyline -> ()
+    embedAnotherPolyline: (polyLine) ->
+        throw new Error("IMPLEMENT ME PLEASE!")
+
+    # BDS.Circle -> ()
+    eraseEdgesInCircle: (circle) ->
+
+        # Generate edge bvh's
+        if not @_edgebvh
+            @_generateBVH()
+
+        
+        
+        
 

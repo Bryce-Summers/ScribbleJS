@@ -242,7 +242,7 @@ class SCRIB.PolylineGraphEmbedder
             # Populate the original lines.
             for i in [0...len - 1] by 1
             
-                @_lines_initial.push(new SCRIB.Line(i + offset, i + offset + 1, @_points))
+                @_lines_initial.push(new BDS.Line(i + offset, i + offset + 1, @_points))
             
 
             ###
@@ -253,7 +253,7 @@ class SCRIB.PolylineGraphEmbedder
             if polyline.isClosed()
 
                 # connects last point at index (len - 1 + offset) to the first point, located at index (0 + offset).
-                @_lines_initial.push(new SCRIB.Line(len - 1 + offset, 0 + offset, @_points))
+                @_lines_initial.push(new BDS.Line(len - 1 + offset, 0 + offset, @_points))
 
             return
 
@@ -274,7 +274,7 @@ class SCRIB.PolylineGraphEmbedder
         ###
         _splitIntersectionPoints: () ->
 
-            intersector = new SCRIB.Intersector()
+            intersector = new BDS.Intersector()
 
             # Use a custom made O(maximum vertical overlap * log(maximum vertical overlap).
             # Very small constant factors, cache friendly.

@@ -29,17 +29,17 @@ function main()
     }
 
     var lines = []
-    lines.push(new SCRIB.Line(0, 1, points));
-    lines.push(new SCRIB.Line(1, 2, points));
-    lines.push(new SCRIB.Line(2, 3, points));
+    lines.push(new BDS.Line(0, 1, points));
+    lines.push(new BDS.Line(1, 2, points));
+    lines.push(new BDS.Line(2, 3, points));
 
     for(var i = 4; i < points.length - 1; i++)
     {
-        lines.push(new SCRIB.Line(i, i + 1, points));
+        lines.push(new BDS.Line(i, i + 1, points));
     }
 
-    var intersector = new SCRIB.Intersector();
-    intersector.intersect(lines);
+    var intersector = new BDS.Intersector();
+    intersector.intersectLineSegments(lines);
 
     var split_lines = []
 

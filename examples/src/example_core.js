@@ -14,11 +14,30 @@ function Canvas_Drawer()
 
     // FIXME: Get the actual dimensions of the canvas.
     w = 500;
-    h = 500;   
+    h = 500;
+
+    // Black color.
+    this._background_color = 0x000000;
 }
 
 Canvas_Drawer.prototype =
 {
+
+    clearScreen()
+    {
+        ctx = this.ctx;
+
+        // Store the current transformation matrix
+        ctx.save();
+
+        // Use the identity matrix while clearing the canvas
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        this.fillColor(this._background_color);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Restore the transform
+        ctx.restore();
+    },
 
     // #rrggbb (number)
     strokeColor(color)
@@ -32,6 +51,11 @@ Canvas_Drawer.prototype =
     {
         str = color.toString(16);
         this.ctx.fillStyle = '#' + str;
+    },
+
+    lineWidth(width)
+    {
+        this.ctx.lineWidth = width;
     },
 
     randomColor()
@@ -149,8 +173,17 @@ Canvas_Drawer.prototype =
         {
             ctx.fill();
         }
+  
+    },
 
-        
+    drawCircle(cx, cy, radius)
+    {
+        ctx = this.ctx;
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius, 0, 2 * Math.PI, false);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
     }
 
 }
@@ -180,3 +213,253 @@ Geometry_Generator.prototype =
         return line;
     },
 }
+
+// -- Root Input functions.
+var INPUT; // The global Input Controller than handles time, mouse, keyboard, etc inputs.
+function init_input(start_time)
+{
+    // Initialize the root of the input specification tree.
+    INPUT = new Input_Controller();
+
+    window.addEventListener( 'resize', onWindowResize, false);
+
+    //window.addEventListener("keypress", onKeyPress);
+    window.addEventListener("keydown", onKeyPress);
+
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("mousedown", onMouseDown);
+    window.addEventListener("mouseup",   onMouseUp);
+
+
+    // The current system time, used to correctly pass time deltas.
+    TIMESTAMP = performance.now();
+
+    // Initialize Time input.
+    if(start_time)
+    {
+        beginTime();
+    }
+}
+
+// Events.
+function onWindowResize( event )
+{
+    
+}
+
+// FIXME: ReWire these input events.
+function onKeyPress( event )
+{
+    // Key codes for event.which.
+    var LEFT  = 37
+    var RIGHT = 39
+}
+
+function onMouseMove( event )
+{
+    event = {x: event.x, y: event.y};
+    translateEvent(event);
+    INPUT.mouse_move(event);
+}
+
+function onMouseDown( e )//event
+{
+    //http://stackoverflow.com/questions/2405771/is-right-click-a-javascript-event
+    var isRightMB;
+    e = e || window.event;
+
+    if ("which" in e)  // Gecko (Firefox), WebKit (Safari/Chrome) & Opera
+        isRightMB = e.which == 3; 
+    else if ("button" in e)  // IE, Opera 
+        isRightMB = e.button == 2; 
+
+    if(isRightMB)
+        return
+
+    event = {x: event.x, y: event.y};
+    translateEvent(e);
+    INPUT.mouse_down(e);
+}
+
+function onMouseUp( event )
+{
+    event = {x: event.x, y: event.y};
+    translateEvent(event);
+    INPUT.mouse_up(event);
+}
+
+function translateEvent(event)
+{
+    var rect = canvas.getBoundingClientRect();  
+
+    event.x = event.x - rect.left;
+    event.y = event.y - rect.top;
+}
+
+function beginTime()
+{
+    TIMESTAMP = performance.now();
+    INPUT.time_on = true;
+    timestep();
+}
+
+function timestep()
+{
+    if(INPUT.time_on)
+    {
+        requestAnimationFrame(timestep);
+    }
+    else
+    {
+        return;
+    }
+
+    time_new = performance.now();
+    var dt = time_new - TIMESTAMP;
+    TIMESTAMP = time_new;
+
+    try
+    {
+        INPUT.time(dt);
+    }
+    catch(err) { // Stop time on error.
+        INPUT.time_on = false;
+        throw err;
+    }
+
+}
+
+/*
+ * 
+ *
+ */
+
+function Input_Controller()
+{
+    this._mouse_input_controllers    = [];
+    this._keyboard_input_controllers = [];
+    this._time_input_controllers     = [];
+
+    // Things like window resize.
+    this._system_controllers          = [];
+
+    this.time_on = false;
+}
+
+// FIXME: Should I make the implementation of each of these methods optional?
+Input_Controller.prototype =
+{  
+
+    // Adds a controller that handles all inputs.
+    add_universal_controller(controller)
+    {
+        // Add this controller to all controller categories.
+        this._mouse_input_controllers.push(controller);
+        this._keyboard_input_controllers.push(controller);
+        this._time_input_controllers.push(controller);
+        this._system_controllers.push(controller);
+    },
+
+    add_mouse_input_controller(controller)
+    {
+        this._mouse_input_controllers.push(controller);
+    },
+
+    add_keyboard_input_controller(controller)
+    {
+        this._keyboard_input_controllers.push(controller);
+    },
+
+    add_time_input_controller(controller)
+    {
+        this._time_input_controllers.push(controller);
+    },
+
+    add_system_controller(controller)
+    {
+        this._system_controllers.push(controller);
+    },
+
+    mouse_down(event)
+    {
+        // event.x, event.y are the coordinates for the mouse button.
+        // They are originally piped in from screeen space from [0, screen_w] x [0, screen_h]
+        len = this._mouse_input_controllers.length;
+        for (var i = 0; i < len; i++)
+        {
+            controller = this._mouse_input_controllers[i];
+            controller.mouse_down(event);
+        }
+    },
+
+    mouse_up(event)
+    {
+        len = this._mouse_input_controllers.length;
+        for (var i = 0; i < len; i++)
+        {
+            controller = this._mouse_input_controllers[i];
+            controller.mouse_up(event);
+        }
+    },
+
+    mouse_move(event)
+    {
+        len = this._mouse_input_controllers.length;
+        for (var i = 0; i < len; i++)
+        {
+            controller = this._mouse_input_controllers[i];
+            controller.mouse_move(event);
+        }
+    },
+
+    // Difference in time between the previous call and this call.
+    time(dt)
+    {
+        len = this._time_input_controllers.length;
+        for (var i = 0; i < len; i++)
+        {
+            controller = this._time_input_controllers[i];
+            controller.time(dt);
+        }
+    },
+
+    window_resize(event)
+    {
+        len = this._system_controllers.length
+        for(var i = 0; i < len; i++)
+        {
+            controller = this._system_controllers[i];
+            controller.window_resize();
+        }
+    }
+
+}
+
+/*
+#
+# Here is the Interface for constructing mouse controller classes.
+#
+# Written by Bryce Summers on 11/22/2016
+# Abstracted on 12 - 18 - 2016.
+#
+
+class CORE.I_Mouse_Interface
+
+    # Input: THREE.js Scene. Used to add GUI elements to the screen and modify the persistent state.
+    # THREE.js
+    constructor: (@scene, @camera) ->
+
+    mouse_down: (event) ->
+
+    # event.x, event.y are the coordinates for the mouse button.
+    # They are originally piped in from screeen space from [0, screen_w] x [0, screen_h]
+
+    mouse_up:   (event) ->
+
+    mouse_move: (event) ->
+
+
+class Core.Time_Interface
+    // Difference in time between the previous call and this call.
+    time: (dt) ->
+*/
