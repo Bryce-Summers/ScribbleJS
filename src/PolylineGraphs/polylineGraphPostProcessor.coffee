@@ -18,14 +18,6 @@ The PolylineGraphPostProcessor class.
 ###
 
 ###
-# Convinent naming convention, more so for our benefit than the machine's since javscript is dynamically typed.
-
-typedef SCRIB.Polyline[]  <-> Face_Vector_Format
-typedef int[]             <-> Int_Vector_Format
-typedef {}                <-> ID_Set
-###
-
-###
 
 Tested Features:
     convert_to_face_infos()
@@ -41,20 +33,41 @@ Untested Features:
 
 ###
 
-class SCRIB.Point_Info
+# FIXME: I am not sure if I will actually use this for anything.
+class SCRIB.Edge_Info
+
+    # SCRIB.Edge
+    constructor: (@edge) ->
+
+class SCRIB.Halfedge_Info
 
     ###
-    // The halfedge that this point represents when this point is collected in a Point_Vector to represent a face.
-    // This may be used to easily extract local connectivity information and attributes for this point and its neighbors.
-    // WARNING: This always points to the original embedding's connectivity information,
-    // which means that things like next pointers may no longer be valid after tails are clipped or other algorithms.
+    # Represents and points to a halfedge. Its pointers may not be valid after algorithms such as tail clipping.
     // Faces and twin pointers should still be valid though...
     # @halfedge is only defined for HalfedgeGraph based souce embeddings.
+    # Also contains a pointer to its face_info object.
     ###
 
-    # BDS.Point, int, SCRIB.halfedge
-    constructor: (@point, @id, @halfedge) ->
+    # SCRIB.halfedge, SCRIB.Face_Info
+    constructor: (@halfedge, @face_info) ->
 
+        vert      = @halfedge.vertex
+        vert_data = vert.data
+
+        @point = vert_data.point
+        @id    = vert_data.id
+
+        # Create a 2 point polyline from the start to the end of this halfedge.
+        # This polyline may and will be used in the construction of edge BVH's
+        @polyline = new BDS.Polyline(false)
+        @polyline.addPoint(@point)
+        @polyline.setAssociatedData(@) # Provide a reference back to this class for BVH query calls.
+
+        # Now add the second point
+        next_vert  = @halfedge.next.vertex
+        next_data  = next_vert.data
+        next_point = next_data.point
+        @polyline.addPoint(next_point)
 
 class SCRIB.Face_Info
 
@@ -64,10 +77,15 @@ class SCRIB.Face_Info
         # SCRIB.Face_Info[]
         @holes  = []
 
-        # SCRIB.Point_Info
-        @points = []
+        # SCRIB.Halfedge_Info
+        @halfedges = []
+
+        # Stores a BVH of all of the SCRIB.Halfedge_Info objects.
+        @_halfedge_bvh = null
+
+        # The polyline that is used to represent this face in a face BVH.
         @polyline = new BDS.Polyline(true) # Closed.
-        @polyline.setAssociatedData(@)
+        @polyline.setAssociatedData(@) # Provide a reference back to this class for BVH query calls.
 
         # Contains a set of all faces contributing to this unioned face.
         @faces_id_set = new Set()
@@ -84,9 +102,9 @@ class SCRIB.Face_Info
     getLastPointInfo: () ->
         return @points[@points.length - 1]
 
-    push: (point_info) ->
-        @points.push(point_info)
-        @polyline.addPoint(point_info.point)
+    push: (halfedge_info) ->
+        @points.push(halfedge_info)
+        @polyline.addPoint(halfedge_info.point)
 
     pop: () ->
         @polyline.removeLastPoint()
@@ -98,25 +116,64 @@ class SCRIB.Face_Info
     isComplemented: () ->
         return @polyline.isComplemented()
 
+    # generates the bounding volume Hierarchies from scratch.
+    #BDS.BVH2D = generateBVH() [requires @_graph]
+    generateBVH: () ->
+
+        segments = @polyline.toPolylineSegments()
+
+        len = polyline.length
+        for i in [0...len] by 1
+
+            polyline = segments[i]
+            halfedge = @halfedges[i]
+            polyline.setAssociatedData(halfedge)
+
+        @_halfedge_bvh = new BDS.BVH2D(segments)
+
+    # BDS.Box, [] (optional) -> SCRIB.Halfedge_Infos[]
+    query_halfedges_in_box: (box, output_list) ->
+
+        if output_list == undefined
+            output_list = []
+
+        # Extract all intersecting polylines.
+        polylines = @_halfedge_bvh.query_box_all(box)
+
+        for line in polylines
+            output_list.push(line.getAssociatedData())
+
+        return output_list
+
+
+# This post processor allows the user to load a HalfedgeGraph object and then never touch the graph again.
+# This class performs all of the algorithms for the user and returns results in easy to use
+# Face_Info, Edge_Info, and Halfedge_Info data structures.
+# These data structures themselves contain pointers to the Halfedge Graph elements, in case the user wants to do something more advanced.
 class SCRIB.PolylineGraphPostProcessor
 
 
     constructor: () ->
     
+        # This is the main structure
         @_graph = null
 
         # SCRIB.Face_Info[]
-        # This can be loaded for algorithms such as tail clipping.
-        # If this is loaded, then algorithms such as polyline adding and area edge erasing will preserve the face_info objects.
+        # If this is loaded, then future calls to convert_to_face_infos will
+        # preserve the faces that still exist in the halfedgemesh in their output.
+        # It is also required foor algorithms such as tail clipping.
         @_face_vector = null
 
-        @_facebvh = null
-        @_edgebvh = null
+        # Used for face queries.
+        @_face_bvh = null
+
 
     # -- Data Structure Conversion.
     # () -> SCRIB.Face_Info[]
-    # Converts a Graph Object into a face_info vector.
-    convert_to_face_infos: () ->
+    # Generates a Face_Info array from the current state of the graph object.
+    # sets the internal @_face_vector, which is needed for many algorithms.
+    # Users should store the returned face vector and refer to it for the output results of many of these algorithms.
+    generate_faces_info: () ->
         
         #SCRIB.Face_Info[]
         output = []
@@ -132,19 +189,13 @@ class SCRIB.PolylineGraphPostProcessor
             starting_half_edge = face.halfedge
             current            = starting_half_edge
 
-            # Convert the entire face into point info objects.
+            # Convert the entire face into Halfedge Info Objects.
             loop # DO
-            
-                vert = current.vertex
-                vert_data = vert.data
+                         
+                halfedge_info = new SCRIB.Halfedge_Info(current, face_output)
 
-                point = vert_data.point
-                id    = vert.id
-
-                
-                point_info = new SCRIB.Point_Info(point, id, current)
-                face_output.points.push(point_info)
-                face_output.polyline.addPoint(point)
+                face_output.halfedges.push(halfedge_info)
+                face_output.polyline.addPoint(halfedge_info.point)
 
                 # Iterate.
                 current = current.next
@@ -153,24 +204,25 @@ class SCRIB.PolylineGraphPostProcessor
                 break unless starting_half_edge != current
 
             output.push(face_output)
+            continue
+            # End of while iteration loop.
 
-        # End of while iteration loop.
+        @_face_vector = output
         return output
 
-    ###
-    This class performs operations on face vectors, but it only uses the current face vector as an input.
-    The class never changes the loaded face vector internally.
-    It is up to the user to load the proper face vector when they need a change.
-    ###
+    get_current_faces_info: () ->
+        return @_face_vector
 
-    load_face_vector: (@_face_vector) ->
-    load_graph: (@_graph) ->
+    load_graph: (@_graph) -> # Invalidates the previous face vector.
+        @_face_vector = null
 
+    # These seem a bit silly outside of C++, but maybe they will be useful to folks.
     free_face_vector: () ->
         @_face_vector = null
 
     free_graph: () ->
         @_graph = null
+
 
     # -- Post processing algorithms.
 
@@ -561,13 +613,41 @@ class SCRIB.PolylineGraphPostProcessor
         return new SCRIB.Point_Info(vertex_data.point, vertex.ID, halfedge)
 
 
-    # regenerates the bounding volume hierarchies again from scratch.
-    #BDS.BVH2D = generateBVH() [requires HalfedgeMesh]
-    _generateBVH: () ->
+    # generates the bounding volume hierarchies from scratch.
+    #BDS.BVH2D = generateBVH() [requires @_graph]
+    generateBVH: () ->
 
-        @_graph
-        @_facebvh = null
-        @_edgebvh = null
+        polylines = @facesToPolylines(@_face_vector)
+        @_face_bvh = new BDS.BVH2D(polylines)
+
+    # Converts to a set of polylines.
+    # For applications such as element querying, it may be best to leave out complemented_faces.
+    # Face_Info[], bool (optional) -> Polyline[]
+    facesToPolylines: (face_infos, allow_complemented_faces) ->
+
+        if allow_complemented_faces == undefined
+            allow_compleemented_faces = false
+
+        output = []
+
+        for face_info in face_infos
+            polyline = face_info.polyline
+
+            # Add non complemented faces and complemented faces if they are permitted.
+            if (not polyline.isComplemented()) or allow_complemented_faces
+                output.push(polyline)
+
+            continue;
+
+        return output
+
+    polylinesToAssociatedData: (polylines) ->
+        output = []
+
+        for line in polylines
+            output.push(line.getAssociatedData())
+
+        return output
 
     # Splits the current embedding by the given polyline.
     # Updates the internal line and face bvh's
@@ -575,14 +655,97 @@ class SCRIB.PolylineGraphPostProcessor
     embedAnotherPolyline: (polyLine) ->
         throw new Error("IMPLEMENT ME PLEASE!")
 
-    # BDS.Circle -> ()
-    eraseEdgesInCircle: (circle) ->
+    ###
+    # Edge Queries.
+    # Returns elements within the edge bvh in the given area regions.
+    # Note: Edge queries are implemented by first performing a face query
+    # and then perfomring edge queries on those face's edge bvh's in the Face_Info objects.
+    ###
 
-        # Generate edge bvh's
-        if not @_edgebvh
-            @_generateBVH()
+    # BDS.Circle, Halfedge_Info[] (Optional) -> SCRIB.Halfedge_Info[]
+    query_edges_in_circle: (circle, output) ->
+        return @query_edges_in_geometry(circle, output)
 
-        
-        
-        
+    # BDS.Polyline, Halfedge_Info[] (Optional) -> SCRIB.Halfedge_Info[]
+    query_edges_in_polyline: (polyline, output) ->
+        return @query_edges_in_geometry(polyline, output)
 
+    # BDS.Geometry, Halfedge_Info[] (Optional) -> SCRIB.Halfedge_Info[]
+    query_edges_in_geometry: (geom, output) ->
+
+        hedge = @query_halfedges_in_box(geom.generateBoundingBox())
+
+        for halfedge in edges
+
+            polyline = halfedge.polyline
+
+            if geom.detect_intersection_with_polyline(polyline)
+                output.push(geom)
+
+        return output
+
+    # BDS.Box -> SCRIB.Halfedge_Info[]
+    query_halfedges_in_box: (box, output) ->
+
+        faces = @query_faces_in_box(box);
+
+        if output == undefined
+            output = []
+
+        for face in faces
+            # All halfedges in the bounding box.
+            face.query_halfedges_in_box(box, output)
+
+        return output
+
+
+    ###
+    # Face Queries.
+    # Returns elements within the face bvh in the given area regions.
+    ###
+
+    # BDS.Circle -> Polyline[]
+    query_faces_in_circle: (circle) ->
+        return @query_faces_in_geometry(circle)
+
+    # BDS.Circle -> Polyline[]
+    query_faces_in_polyline: (polyline) ->
+
+        return @query_faces_in_geometry(polyline)
+
+    # Returns a list of polylines in the given geometry.
+    # It needs to specify a .generateBoundingBox() function and
+    # a .detect_intersection_with_polyline(line) function.
+    query_faces_in_geometry: (geom) ->
+
+        box = geom.generateBoundingBox()
+
+        polylines_in_box = @_face_bvh.query_box_all(box)
+
+        # Filter by intersection with circle.
+        output = []
+        for polyline in polylines_in_box
+            if geom.detect_intersection_with_polyline(polyline)
+                output.push(polyline.getAssociatedData())
+
+        return output
+
+    query_faces_in_box: (box) ->
+
+        return @polylinesToAssociatedData(@_face_bvh.query_box_all(box))
+
+    ###
+    # Element Deletion Methods.
+    # These delete all Halfedge Mesh elements within a given region.
+    # They then rebuild and preserve the invariants of the mesh.
+    ###
+
+    # Erases ever one of the edges from the graph.
+    # Deletes relevant halfedges, vertices, and face elements as well.
+    # The user can get the results by calling .generate_faces_info()
+    # SCRIB.Edge_Info -> ()
+    eraseEdges: (edges) ->
+
+    #SCRIB.Edge -> () [removes edge and relevant elements from the HalfedgeGraph]
+    # Redirects all of the othe pointers to restore the graph invariants.
+    _eraseEdge: (edge) ->

@@ -69,7 +69,7 @@ function setup()
     EX.postProcessor.load_graph(graph);
 
     // Immediately write out the graph to face info structures.
-    EX.faces = EX.postProcessor.convert_to_face_infos();
+    EX.faces = EX.postProcessor.generate_faces_info();
 
     // Generate a BVH.
     EX.BVH = new BDS.BVH2D(facesToUncomplementedPolylines(EX.faces));

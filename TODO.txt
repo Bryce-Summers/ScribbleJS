@@ -1,0 +1,11 @@
+
+Handle uncomplemented faces.
+Determine why face segmentation for spiral produces correct and incorrect results depending on the run.
+
+Halfedge Edge Deletion.
+Line BVH.
+
+Removal of lines and faces from BVH's.
+
+Add Screenshots of all examples.
+Construct an index.html website for viewing the examples online.

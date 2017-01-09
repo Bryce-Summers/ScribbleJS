@@ -34,7 +34,7 @@ function main()
     postProcessor.load_graph(graph);
 
     // Immediately write out the graph to face info structures.
-    faces = postProcessor.convert_to_face_infos();
+    faces = postProcessor.generate_faces_info();
 
     // Draw these faces to the screen.
     drawFaceInfoArray(G, faces);

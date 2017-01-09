@@ -85,13 +85,8 @@ function setup()
     EX.postProcessor.load_graph(graph);
 
     // Immediately write out the graph to face info structures.
-    EX.faces = EX.postProcessor.convert_to_face_infos();
-
-    // Generate a BVH.
-    EX.BVH = new BDS.BVH2D(facesToUncomplementedPolylines(EX.faces));
-
-    EX.box_lines = EX.BVH.toPolylines();
-
+    EX.faces = EX.postProcessor.generate_faces_info();
+    EX.postProcessor.generateBVH();
 }
 
 // Draws an array of SCRIB.Face_Info structures to the screen,
@@ -142,71 +137,39 @@ function drawPolyLine_Array(G, polylines)
     }
 }
 
-
-function facesToUncomplementedPolylines(face_infos)
-{
-    return facesToPolylines(face_infos, false);
-}
-
-function facesToPolylines(face_infos, allow_complemented_faces)
-{
-
-    if(allow_complemented_faces === undefined)
-    {
-        allow_complemented_faces = false;
-    }
-
-    var output = [];
-
-    var len = face_infos.length;
-    for(var i = 0; i < len; i++)
-    {
-        var face_info = face_infos[i];
-        var polyline = face_info.polyline;
-        polyline.setAssociatedData(face_info);
-        
-        polyline.name = "index " + i;
-
-        // Add non complemented faces and complemented faces if they are permitted.
-        if(!polyline.isComplemented() || allow_complemented_faces)
-        {
-            output.push(polyline);
-        }
-    }
-
-    return output;
-}
-
 function Fill_Bucket_Controller()
 {
     // The circle that follows the mouse.
-    this.mouse_circle = new BDS.Circle(new BDS.Point(0, 0), 3, true);
+    this.mouse_circle = new BDS.Circle(new BDS.Point(0, 0), 20, true);
     this.faces_stored  = []
     this.colors_stored = []
+
+    this.mouse_pressed = false;
 }
 
 Fill_Bucket_Controller.prototype =
 {
     mouse_down(event)
     {
-        
+        this.mouse_pressed = true;
     },
 
     mouse_up(event)
     {
-
+        this.mouse_pressed = false;
     },
 
     mouse_move(event)
     {
 
+        // Move the circle centered on the new mouse position.
         this.mouse_circle.setPosition(event.x, event.y);
-        var mouse_pos = this.mouse_circle.getPosition();
 
-        // highlight the faces that the mouse is currently over.
-        // FIXME: I will eventually want to perform this query on edges, rather than faces.
-        var box = this.mouse_circle.generateBoundingBox();
-        var polylines = EX.BVH.query_box_all(box);
+
+        // -- highlight the faces that the mouse is currently over.
+
+        // get a SCRIB.Face_Info[] containing all faces the mouse is currently over.
+        var faces = EX.postProcessor.query_faces_in_circle(this.mouse_circle);
 
         //EX.postProcessor.eraseEdgesInCircle(this.mouse_circle);
 
@@ -218,24 +181,22 @@ Fill_Bucket_Controller.prototype =
             face_stored.color = this.colors_stored.pop();
         }
 
-        // Don't do anything more if there are no polylines.
-        if(polylines.length == 0)
+        // We are done if the mouse is not currently over any faces.
+        if(faces.length == 0)
         {
             return;
         }
 
         // Remember face and color and set the face that would be filled to white.
-        var len = polylines.length;
+        var len = faces.length;
         for(var i = 0; i < len; i++)
         {
-            polyline  = polylines[i];
-            face_info = polyline.getAssociatedData();
+            face_info = faces[i];
             this.faces_stored.push(face_info);
             this.colors_stored.push(face_info.color);
 
             // highlight the selected faces.
             face_info.color = EX.G.interpolateColor(face_info.color, 0xffffff, .75);
-
         }
 
         return;

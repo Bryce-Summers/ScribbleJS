@@ -71,6 +71,11 @@ class SCRIB.Graph
         @_edges     = new BDS.DoubleLinkedList()
         @_halfedges = new BDS.DoubleLinkedList()
 
+        @_next_face_id     = 0
+        @_next_vertice_id  = 0
+        @_next_edge_id     = 0
+        @_next_halfedge_id = 0
+
         # Only used to store elements for construction purposes.
         # These should be deallocated when they are no longer needed.
         # FIXME: Think about factoring these guys out into a HalfedgeBuilder / random access class.
@@ -89,7 +94,7 @@ class SCRIB.Graph
 
     newFace: () ->
 
-        id = @_faces.size()
+        id = @_next_face_id++
         output = new SCRIB.Face()
         @_faces.push_back(output)
         @_face_array.push(output) if @_face_array
@@ -103,7 +108,7 @@ class SCRIB.Graph
 
     newVertex: () ->
     
-        id = @_vertices.size()
+        id = @_next_vertice_id++
         output = new SCRIB.Vertex()
         @_vertices.push_back(output)
         @_vertex_array.push(output) if @_vertex_array
@@ -118,7 +123,7 @@ class SCRIB.Graph
 
     newEdge: () ->
     
-        id = @_edges.size()
+        id = @_next_edge_id++
         output = new SCRIB.Edge()
         @_edges.push_back(output)
         @_edge_array.push(output) if @_edge_array
@@ -132,7 +137,7 @@ class SCRIB.Graph
 
     newHalfedge: () ->
     
-        id = @_halfedges.size()
+        id = @_next_halfedge_id++
         output = new SCRIB.Halfedge()
         @_halfedges.push_back(output)
         @_halfedge_array.push(output) if @_halfedge_array

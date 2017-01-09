@@ -32,13 +32,13 @@ function main()
     postProcessor.load_graph(graph);
 
     // Immediately write out the graph to face info structures.
-    faces = postProcessor.convert_to_face_infos();
+    faces = postProcessor.generate_faces_info();
 
     // Draw these faces to the screen.
     drawFaceInfoArray(G, faces);
 
     // Generate a BVH.
-    BVH = new BDS.BVH2D(facesToPolylines(faces));
+    BVH = new BDS.BVH2D(postProcessor.facesToPolylines(faces));
 
     boxes = BVH.toPolylines();
 
@@ -75,19 +75,6 @@ function drawPolyLine_Array(G, polylines)
     {
         G.drawPolyline(polylines[i]);
     }
-}
-
-function facesToPolylines(face_infos)
-{
-    var output = [];
-
-    var len = face_infos.length;
-    for(var i = 0; i < len; i++)
-    {
-        output.push(face_infos[i].polyline);
-    }
-
-    return output;
 }
 
 // Run Example.
