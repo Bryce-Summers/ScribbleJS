@@ -32,21 +32,6 @@ function setup()
     // -- Spiral.
     geom = new Geometry_Generator();
     var line2 = geom.spiral();
-
-    /* Testing Square.
-    var s0 = new BDS.Point(50, 50);
-    var s1 = new BDS.Point(100, 50);
-    var s2 = new BDS.Point(100, 100);
-    var s3 = new BDS.Point(50, 100);
-
-    var line2 = new BDS.Polyline(true, [s0, s1, s2, s3]);
-    //*/
-
-    
-    EX.G.drawPolyline(line1);
-    EX.G.drawPolyline(line2);
-
-
     var lines = [line1, line2]
 
     range = new BDS.Box(new BDS.Point(0,   0),
@@ -57,7 +42,38 @@ function setup()
     {
         line3.addPoint(range.getRandomPointInBox());
     }
-    lines.push(line3);    
+    var lines = []
+    lines.push(line3)
+
+
+    /* Testing Square.
+    // FIXME: Handle problems with vertical line segments.
+    var lines = [];
+
+    var sq0 = new BDS.Point(50, 50);
+    var sq1 = new BDS.Point(75, 75);
+    var squares = [sq0, sq1];
+
+    for(var i = 0; i < squares.length; i++)
+    {
+        var pt = squares[i];
+        var x = pt.x;
+        var y = pt.y;
+
+        var s0 = new BDS.Point(x + 0,  y +  0);
+        var s1 = new BDS.Point(x + 0,  y + 50);
+        var s2 = new BDS.Point(x + 50, y + 50);
+        var s3 = new BDS.Point(x + 50, y + 0);
+        var line = new BDS.Polyline(true, [s0, s1, s2, s3]);
+        lines.push(line);
+    }
+
+    //*/
+
+
+
+
+
 
     // Embed the polylines within a graph.
     var embedder = new SCRIB.PolylineGraphEmbedder();
@@ -163,9 +179,10 @@ function facesToPolylines(face_infos, allow_complemented_faces)
 
 function Fill_Bucket_Controller()
 {
+    // The circle that follows the mouse.
     this.mouse_circle = new BDS.Circle(new BDS.Point(0, 0), 3, true);
-    this.face_stored  = null
-    this.color_stored = null
+    this.faces_stored  = []
+    this.colors_stored = []
 }
 
 Fill_Bucket_Controller.prototype =
@@ -182,37 +199,47 @@ Fill_Bucket_Controller.prototype =
 
     mouse_move(event)
     {
-        this.mouse_circle.setPosition(event.x, event.y);
 
+        this.mouse_circle.setPosition(event.x, event.y);
         var mouse_pos = this.mouse_circle.getPosition();
 
-        // Highlight the face that the mouse is currently over.
-        var polylines = EX.BVH.query_point_all(new BDS.Point(mouse_pos.x, mouse_pos.y));
-        var polyline = null;
+        // highlight the faces that the mouse is currently over.
+        // FIXME: I will eventually want to perform this query on edges, rather than faces.
+        var box = this.mouse_circle.generateBoundingBox();
+        var polylines = EX.BVH.query_box_all(box);
 
-        if (polylines.length > 0)
+        //EX.postProcessor.eraseEdgesInCircle(this.mouse_circle);
+
+        // Revert all previous faces to their original colors.
+        var len = this.faces_stored.length;
+        for(var i = 0; i < len; i++)
         {
-            polyline = polylines[0];
+            face_stored       = this.faces_stored.pop();
+            face_stored.color = this.colors_stored.pop();
         }
 
-        // Revert previous color on previous face.
-        if(this.face_stored != null)
+        // Don't do anything more if there are no polylines.
+        if(polylines.length == 0)
         {
-            this.face_stored.color = this.color_stored;
-            this.face_stored = null;
+            return;
         }
 
-        // Don't do anything more if the polyline is null.
-        if(polyline === null)
+        // Remember face and color and set the face that would be filled to white.
+        var len = polylines.length;
+        for(var i = 0; i < len; i++)
         {
-            return
+            polyline  = polylines[i];
+            face_info = polyline.getAssociatedData();
+            this.faces_stored.push(face_info);
+            this.colors_stored.push(face_info.color);
+
+            // highlight the selected faces.
+            face_info.color = EX.G.interpolateColor(face_info.color, 0xffffff, .75);
+
         }
 
-        // Remeber face and color and set the face that would be filled to white.
-        face_info = polyline.getAssociatedData()
-        this.face_stored  = face_info;
-        this.color_stored = face_info.color;
-        face_info.color   = 0xffffff;//White.
+        return;
+
     },
 
     // Difference in time between the previous call and this call.
@@ -223,6 +250,8 @@ Fill_Bucket_Controller.prototype =
 
         // Draw these faces to the screen.
         drawFaceInfoArray(EX.G, EX.faces);
+
+        // Draw the BVH.
         //drawPolyLine_Array(EX.G, EX.box_lines);
 
         // Draw the mouse.

@@ -75,6 +75,47 @@ Canvas_Drawer.prototype =
         return red + green + blue
     },
 
+    newColor(red, green, blue)
+    {
+        red   = red << 16;
+        green = green << 8;
+
+        return red + green + blue;
+    },
+
+    // Interpolates between color 1 and color 2 in each of the red, green, and blue channels.
+    // Percentage marks how what percent of color 2.
+    interpolateColor(c1, c2, percentage)
+    {
+        p1 = 1 - percentage;
+        p2 = percentage;
+
+        red   = this.getRed(c1)*p1   + this.getRed(c2)*p2;
+        green = this.getGreen(c1)*p1 + this.getGreen(c2)*p2;
+        blue  = this.getBlue(c1)*p1  + this.getBlue(c2)*p2;
+
+        red = Math.floor(red);
+        green = Math.floor(green);
+        blue = Math.floor(blue);
+
+        return this.newColor(red, green, blue);
+    },
+
+    getRed(color)
+    {
+        return color >> 16;
+    },
+
+    getGreen(color)
+    {
+        return (color >> 8) & 0xff;
+    },
+
+    getBlue(color)
+    {
+        return (color >> 0) & 0xff;
+    },
+
     // Input: SCRIB.Line
     drawArrow(line, size)
     {
@@ -176,13 +217,24 @@ Canvas_Drawer.prototype =
   
     },
 
-    drawCircle(cx, cy, radius)
+    drawCircle(circle)
     {
+        var position = circle.getPosition();
+        var cx = position.x;
+        var cy = position.y;
+        var radius = circle.getRadius();
+
+
         ctx = this.ctx;
         ctx.beginPath();
         ctx.arc(cx, cy, radius, 0, 2 * Math.PI, false);
         ctx.closePath();
-        ctx.fill();
+
+        // fill in the circle if it is filled.
+        if(circle.isFilled())
+        {
+            ctx.fill();
+        }
         ctx.stroke();
     }
 
