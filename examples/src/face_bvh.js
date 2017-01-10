@@ -37,8 +37,8 @@ function main()
     // Draw these faces to the screen.
     drawFaceInfoArray(G, faces);
 
-    // Generate a BVH.
-    BVH = new BDS.BVH2D(postProcessor.facesToPolylines(faces));
+    // Generate a BVH representing the faces.
+    BVH = postProcessor.generateBVH();
 
     boxes = BVH.toPolylines();
 

@@ -2364,11 +2364,11 @@ SCRIB = {};
     Assumes all points are distinct.
      */
 
-    PolylineGraphEmbedder.prototype.embedPolyline = function(inputs) {
-      if (inputs.size() <= 1) {
-        return this._trivial(inputs);
+    PolylineGraphEmbedder.prototype.embedPolyline = function(input) {
+      if (input.size() <= 1) {
+        return this._trivial(input);
       }
-      this._loadPolyline(inputs);
+      this._loadPolyline(input);
       return this._do_the_rest();
     };
 
@@ -2841,8 +2841,10 @@ Untested Features:
 
 (function() {
   SCRIB.Edge_Info = (function() {
-    function Edge_Info(edge1) {
+    function Edge_Info(edge1, halfedge_info1) {
       this.edge = edge1;
+      this.halfedge_info = halfedge_info1;
+      this.id = this.edge.id;
     }
 
     return Edge_Info;
@@ -2857,14 +2859,14 @@ Untested Features:
      * @halfedge is only defined for HalfedgeGraph based souce embeddings.
      * Also contains a pointer to its face_info object.
      */
-    function Halfedge_Info(halfedge1, face_info1) {
+    function Halfedge_Info(halfedge3, face_info1) {
       var next_data, next_point, next_vert, vert, vert_data;
-      this.halfedge = halfedge1;
+      this.halfedge = halfedge3;
       this.face_info = face_info1;
       vert = this.halfedge.vertex;
       vert_data = vert.data;
       this.point = vert_data.point;
-      this.id = vert_data.id;
+      this.id = this.halfedge.id;
       this.polyline = new BDS.Polyline(false);
       this.polyline.addPoint(this.point);
       this.polyline.setAssociatedData(this);
@@ -2879,8 +2881,8 @@ Untested Features:
   })();
 
   SCRIB.Face_Info = (function() {
-    function Face_Info(face1) {
-      this.face = face1;
+    function Face_Info(face3) {
+      this.face = face3;
       this.holes = [];
       this.halfedges = [];
       this._halfedge_bvh = null;
@@ -2921,19 +2923,50 @@ Untested Features:
     };
 
     Face_Info.prototype.generateBVH = function() {
-      var halfedge, i, j, len, polyline, ref, segments;
+      var halfedge, i, j, len, line, ref, segments;
       segments = this.polyline.toPolylineSegments();
-      len = polyline.length;
+      len = segments.length;
       for (i = j = 0, ref = len; j < ref; i = j += 1) {
-        polyline = segments[i];
+        line = segments[i];
         halfedge = this.halfedges[i];
-        polyline.setAssociatedData(halfedge);
+        line.setAssociatedData(halfedge);
       }
-      return this._halfedge_bvh = new BDS.BVH2D(segments);
+      this._halfedge_bvh = new BDS.BVH2D(segments);
+      return this._halfedge_bvh;
+    };
+
+
+    /*
+    Edge Intersection functions.
+    Returns all edges within this face that are also within the given geometries.
+     */
+
+    Face_Info.prototype.query_halfedges_in_circle = function(circle, output) {
+      return this.query_halfedges_in_geometry(circle, output);
+    };
+
+    Face_Info.prototype.query_halfedges_in_polyline = function(polyline, output) {
+      return this.query_halfedges_in_geometry(polyline, output);
+    };
+
+    Face_Info.prototype.query_halfedges_in_geometry = function(geom, output) {
+      var all_halfedges, halfedge, j, len1, polyline;
+      all_halfedges = this.query_halfedges_in_box(geom.generateBoundingBox());
+      for (j = 0, len1 = all_halfedges.length; j < len1; j++) {
+        halfedge = all_halfedges[j];
+        polyline = halfedge.polyline;
+        if (geom.detect_intersection_with_polyline(polyline)) {
+          output.push(halfedge);
+        }
+      }
+      return output;
     };
 
     Face_Info.prototype.query_halfedges_in_box = function(box, output_list) {
       var j, len1, line, polylines;
+      if (this._halfedge_bvh === null) {
+        this.generateBVH();
+      }
       if (output_list === void 0) {
         output_list = [];
       }
@@ -3270,7 +3303,7 @@ Untested Features:
 
     PolylineGraphPostProcessor.prototype.generateBVH = function() {
       var polylines;
-      polylines = this.facesToPolylines(this._face_vector);
+      polylines = this.facesToPolylines(this._face_vector, true);
       return this._face_bvh = new BDS.BVH2D(polylines);
     };
 
@@ -3307,8 +3340,9 @@ Untested Features:
 
 
     /*
-     * Edge Queries.
-     * Returns elements within the edge bvh in the given area regions.
+     * Graph wide Edge Queries.
+     * Returns all elements in the graph within the given regions.
+     * NOTE: If you already have faces found, it will be better to use the Face_Info query functions.
      * Note: Edge queries are implemented by first performing a face query
      * and then perfomring edge queries on those face's edge bvh's in the Face_Info objects.
      */
@@ -3322,8 +3356,8 @@ Untested Features:
     };
 
     PolylineGraphPostProcessor.prototype.query_edges_in_geometry = function(geom, output) {
-      var halfedge, hedge, j, len1, polyline;
-      hedge = this.query_halfedges_in_box(geom.generateBoundingBox());
+      var edges, halfedge, j, len1, polyline;
+      edges = this.query_halfedges_in_box(geom.generateBoundingBox());
       for (j = 0, len1 = edges.length; j < len1; j++) {
         halfedge = edges[j];
         polyline = halfedge.polyline;
@@ -3379,6 +3413,26 @@ Untested Features:
       return this.polylinesToAssociatedData(this._face_bvh.query_box_all(box));
     };
 
+    PolylineGraphPostProcessor.prototype.halfedgesToEdges = function(halfedge_infos) {
+      var edge, edge_info, halfedge, halfedge_info, id, j, len1, output, set;
+      output = [];
+      set = new Set();
+      for (j = 0, len1 = halfedge_infos.length; j < len1; j++) {
+        halfedge_info = halfedge_infos[j];
+        halfedge = halfedge_info.halfedge;
+        edge = halfedge.edge;
+        id = edge.id;
+        if (set.has(id)) {
+          continue;
+        }
+        set.add(id);
+        edge_info = new SCRIB.Edge_Info(edge, halfedge_info);
+        output.push(edge_info);
+        continue;
+      }
+      return output;
+    };
+
 
     /*
      * Element Deletion Methods.
@@ -3386,9 +3440,82 @@ Untested Features:
      * They then rebuild and preserve the invariants of the mesh.
      */
 
-    PolylineGraphPostProcessor.prototype.eraseEdges = function(edges) {};
+    PolylineGraphPostProcessor.prototype.eraseEdges = function(edge_infos, params) {
+      var edge_info, j, len1;
+      for (j = 0, len1 = edge_infos.length; j < len1; j++) {
+        edge_info = edge_infos[j];
+        this._eraseEdge(edge_info, params);
+      }
+      return this.generateBVH();
+    };
 
-    PolylineGraphPostProcessor.prototype._eraseEdge = function(edge) {};
+    PolylineGraphPostProcessor.prototype._eraseEdge = function(edge_info, params) {
+      var current, degree1, degree2, edge, face1, face2, face_info, h0, halfedge1, halfedge2, merge_faces, next, prev, vert1, vert2;
+      edge = edge_info.edge;
+      halfedge1 = edge.halfedge;
+      halfedge2 = halfedge1.twin;
+      vert1 = halfedge1.vertex;
+      vert2 = halfedge2.vertex;
+      degree1 = vert1.degree();
+      degree2 = vert2.degree();
+      face1 = halfedge1.face;
+      face2 = halfedge2.face;
+      merge_faces = face1 !== face2;
+      if (merge_faces) {
+        h0 = halfedge2.next;
+        current = h0;
+        while (true) {
+          current.face = face1;
+          current = current.next;
+          if (current === h0) {
+            break;
+          }
+        }
+        face2.destroy();
+      }
+      if (degree1 === 1) {
+        if (params.erase_lonely_vertices) {
+          vert1.destroy();
+        } else {
+          vert1.make_lonely();
+        }
+      }
+      if (degree2 === 1) {
+        if (params.erase_lonely_vertices) {
+          vert2.destroy();
+        } else {
+          vert2.make_lonely();
+        }
+      }
+      if (degree1 === 1 && degree2 === 1) {
+        face1.destroy();
+        edge.destroy();
+        halfedge1.destroy();
+        halfedge2.destroy();
+        return;
+      }
+      if (degree2 > 1) {
+        next = halfedge1.next;
+        prev = halfedge2.prev;
+        next.prev = prev;
+        prev.next = next;
+        face1.halfedge = next;
+        vert2.halfedge = next;
+      }
+      if (degree1 > 1) {
+        next = halfedge2.next;
+        prev = halfedge1.prev;
+        next.prev = prev;
+        prev.next = next;
+        face1.halfedge = next;
+        vert1.halfedge = next;
+      }
+      halfedge1.destroy();
+      halfedge2.destroy();
+      edge.destroy();
+      face_info = edge_info.halfedge_info.face_info;
+      face_info.generateBVH();
+    };
 
     return PolylineGraphPostProcessor;
 
@@ -3639,6 +3766,10 @@ class SCRIB.Edge_Data
       this._iterator = null;
     }
 
+    Face.prototype.destroy = function() {
+      return this._iterator.remove();
+    };
+
     return Face;
 
   })();
@@ -3650,6 +3781,31 @@ class SCRIB.Edge_Data
       this.id = null;
       this._iterator = null;
     }
+
+    Vertex.prototype.destroy = function() {
+      return this._iterator.remove();
+    };
+
+    Vertex.prototype.alone = function() {
+      return this.halfedge === null;
+    };
+
+    Vertex.prototype.degree = function() {
+      var count, current, start;
+      start = this.halfedge;
+      current = start.twin.next;
+      count = 1;
+      while (start !== current) {
+        count++;
+        current = current.twin.next;
+        continue;
+      }
+      return count;
+    };
+
+    Vertex.prototype.make_lonely = function() {
+      return this.halfedge = null;
+    };
 
     return Vertex;
 
@@ -3665,6 +3821,10 @@ class SCRIB.Edge_Data
     Edge.id = null;
 
     Edge._iterator = null;
+
+    Edge.prototype.destroy = function() {
+      return this._iterator.remove();
+    };
 
     return Edge;
 
@@ -3682,6 +3842,10 @@ class SCRIB.Edge_Data
       this.id = null;
       this._iterator = null;
     }
+
+    Halfedge.prototype.destroy = function() {
+      return this._iterator.remove();
+    };
 
     return Halfedge;
 

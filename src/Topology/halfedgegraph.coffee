@@ -184,6 +184,7 @@ class SCRIB.Graph
         return @_halfedge_array[id]
 
     # This should be called after you no longer need random access, such as after construction.
+    # Random access is only meant for construction and does not support deletion.
     
     delete_index_arrays: () ->
 
@@ -222,6 +223,12 @@ class SCRIB.Face
         @id = null
         @_iterator = null
 
+    destroy: () ->
+        @_iterator.remove()
+
+# A vertex will have a dummy edge that points to itself if it is by itself.
+# These lone vertices will be considered to have degree 1.
+# the dummy will have itself as a twin as well.
 class SCRIB.Vertex
 
     constructor: () ->
@@ -235,6 +242,29 @@ class SCRIB.Vertex
         @id = null
         @_iterator = null
 
+    destroy: () ->
+        @_iterator.remove()
+
+    alone: () ->
+        return @halfedge == null
+
+    # ASSSUMES: Well formed halfedge mesh.
+    degree: () ->
+
+        start = @halfedge
+        current = start.twin.next
+        count = 1
+
+        while start != current
+            count++
+            current = current.twin.next
+            continue
+
+        return count
+
+    make_lonely: () ->
+        @halfedge = null
+
 # Non directed edges, very useful for getting consecutive ID's within input polylines.
 class SCRIB.Edge
 
@@ -243,6 +273,9 @@ class SCRIB.Edge
     @data       = null
     @id         = null
     @_iterator  = null
+
+    destroy: () ->
+        @_iterator.remove()
 
 
 class SCRIB.Halfedge
@@ -267,3 +300,6 @@ class SCRIB.Halfedge
         @data = null
         @id   = null
         @_iterator  = null
+
+    destroy: () ->
+        @_iterator.remove()

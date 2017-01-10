@@ -22,33 +22,35 @@ function main()
 function setup()
 {
     EX.G = new Canvas_Drawer();
-    
-    var p0 = new BDS.Point(0, 250);
-    var p1 = new BDS.Point(500, 250);
 
-    // Horizontal Line.
-    var line1 = new BDS.Polyline(false, [p0, p1]);
-
-    // -- Spiral.
-    geom = new Geometry_Generator();
-    var line2 = geom.spiral();
-    var lines = [line1, line2]
-
+    // Produce a random Scribble.
     range = new BDS.Box(new BDS.Point(0,   0),
                         new BDS.Point(500, 500))
-    
-    line3 = new BDS.Polyline(true);
-    for (var i = 0; i < 50; i++)
-    {
-        line3.addPoint(range.getRandomPointInBox());
-    }
-    var lines = []
-    lines.push(line3)
 
+    var lines = [];
+
+    // Star
+    line = new BDS.Polyline(true);
+    for (var i = 0; i < 5; i++)
+    {
+        var angle = i*Math.PI*4/5
+        x = 250 + 100*Math.cos(angle);
+        y = 250 + 100*Math.sin(angle);
+
+        //line.addPoint(range.getRandomPointInBox());
+        line.addPoint(new BDS.Point(x, y));
+    }
+    lines.push(line);
+
+    // A Straight Line.
+    line = new BDS.Polyline(false);
+    line.addPoint(new BDS.Point(400, 10))
+    line.addPoint(new BDS.Point(400, 250))
+    lines.push(line)
 
     /* Testing Square.
     // FIXME: Handle problems with vertical line segments.
-    var lines = [];
+    var line;
 
     var sq0 = new BDS.Point(50, 50);
     var sq1 = new BDS.Point(75, 75);
@@ -64,19 +66,14 @@ function setup()
         var s1 = new BDS.Point(x + 0,  y + 50);
         var s2 = new BDS.Point(x + 50, y + 50);
         var s3 = new BDS.Point(x + 50, y + 0);
-        var line = new BDS.Polyline(true, [s0, s1, s2, s3]);
-        lines.push(line);
+        line = new BDS.Polyline(true, [s0, s1, s2, s3]);
     }
 
     //*/
 
-
-
-
-
-
     // Embed the polylines within a graph.
     var embedder = new SCRIB.PolylineGraphEmbedder();
+    //var graph    = embedder.embedPolyline(line);
     var graph    = embedder.embedPolylineArray(lines);
 
     // Now Use a Post Processor to derive easy to work with structures which may be drawn to the screen.
@@ -119,10 +116,31 @@ function drawFaceInfoArray(G, face_info_array)
         // Draw Non-complemented faces.
         if(!face.isComplemented())
         {
-           G.fillColor(color);
+           G.fillColor(color);  
            G.drawPolygon(face.polyline);
         }
+        else
+        {
+            G.strokeColor(0x00ff00);
+            G.drawPolyline(face.polyline);
+        }
+
+        
+        
     }
+}
+
+function drawEdgeInfoArray(G, edge_info_array)
+{
+    // Red Strokes.
+    G.strokeColor(0xff0000);
+
+    var len = edge_info_array.length;
+    for(var i = 0; i < len; i++)
+    {
+        edge_info = edge_info_array[i];
+        G.drawPolyline(edge_info.polyline);
+    }   
 }
 
 function drawPolyLine_Array(G, polylines)
@@ -145,6 +163,9 @@ function Fill_Bucket_Controller()
     this.colors_stored = []
 
     this.mouse_pressed = false;
+
+    this.faces = EX.faces;
+    this.halfedges = [];
 }
 
 Fill_Bucket_Controller.prototype =
@@ -181,6 +202,8 @@ Fill_Bucket_Controller.prototype =
             face_stored.color = this.colors_stored.pop();
         }
 
+        this.halfedges = [];
+
         // We are done if the mouse is not currently over any faces.
         if(faces.length == 0)
         {
@@ -199,6 +222,28 @@ Fill_Bucket_Controller.prototype =
             face_info.color = EX.G.interpolateColor(face_info.color, 0xffffff, .75);
         }
 
+        // List all intersected edges.
+        for(var i = 0; i < len; i++)
+        {
+            face_info = faces[i];
+
+            // NOTE: outputs into this.halfedges.
+            face_info.query_halfedges_in_circle(this.mouse_circle, this.halfedges);
+        }
+
+        // Drag and erase elements.
+        if(this.halfedges.length > 0 && this.mouse_pressed)
+        {
+            // We only want to erase each edge once,
+            // So we convert the array of halfedges_info's into an array of full edge_info's.
+            var edge_infos = EX.postProcessor.halfedgesToEdges(this.halfedges);
+
+            // Erase every edge and any trivial elements that arise.
+            params = {erase_lonely_vertices: true}
+            EX.postProcessor.eraseEdges(edge_infos, params);
+            this.faces = EX.postProcessor.generate_faces_info();
+        }
+
         return;
 
     },
@@ -209,8 +254,11 @@ Fill_Bucket_Controller.prototype =
         // Clear the screen for new drawing.
         EX.G.clearScreen();
 
-        // Draw these faces to the screen.
-        drawFaceInfoArray(EX.G, EX.faces);
+        // Draw the faces to the screen.
+        drawFaceInfoArray(EX.G, this.faces);
+
+        // Draw the set of edges that the user is threatening to delete.
+        drawEdgeInfoArray(EX.G, this.halfedges);
 
         // Draw the BVH.
         //drawPolyLine_Array(EX.G, EX.box_lines);

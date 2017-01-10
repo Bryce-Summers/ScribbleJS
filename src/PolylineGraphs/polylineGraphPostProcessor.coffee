@@ -37,7 +37,10 @@ Untested Features:
 class SCRIB.Edge_Info
 
     # SCRIB.Edge
-    constructor: (@edge) ->
+    constructor: (@edge, @halfedge_info) ->
+        @id = @edge.id
+
+
 
 class SCRIB.Halfedge_Info
 
@@ -55,7 +58,7 @@ class SCRIB.Halfedge_Info
         vert_data = vert.data
 
         @point = vert_data.point
-        @id    = vert_data.id
+        @id    = @halfedge.id
 
         # Create a 2 point polyline from the start to the end of this halfedge.
         # This polyline may and will be used in the construction of edge BVH's
@@ -122,17 +125,50 @@ class SCRIB.Face_Info
 
         segments = @polyline.toPolylineSegments()
 
-        len = polyline.length
+        len = segments.length
         for i in [0...len] by 1
 
-            polyline = segments[i]
+            line = segments[i]
             halfedge = @halfedges[i]
-            polyline.setAssociatedData(halfedge)
+            line.setAssociatedData(halfedge)
 
         @_halfedge_bvh = new BDS.BVH2D(segments)
 
+        return @_halfedge_bvh
+
+    ###
+    Edge Intersection functions.
+    Returns all edges within this face that are also within the given geometries.
+    ###
+
+    # BDS.Circle, Halfedge_Info[] (Optional) -> SCRIB.Halfedge_Info[]
+    query_halfedges_in_circle: (circle, output) ->
+        return @query_halfedges_in_geometry(circle, output)
+
+    # BDS.Polyline, Halfedge_Info[] (Optional) -> SCRIB.Halfedge_Info[]
+    query_halfedges_in_polyline: (polyline, output) ->
+        return @query_halfedges_in_geometry(polyline, output)
+
+    # BDS.Geometry, Halfedge_Info[] (Optional) -> SCRIB.Halfedge_Info[]
+    query_halfedges_in_geometry: (geom, output) ->
+
+        all_halfedges = @query_halfedges_in_box(geom.generateBoundingBox())
+
+        # filter to only those halfedges that intersect the input geometry.
+        for halfedge in all_halfedges
+
+            polyline = halfedge.polyline
+
+            if geom.detect_intersection_with_polyline(polyline)
+                output.push(halfedge)
+
+        return output
+
     # BDS.Box, [] (optional) -> SCRIB.Halfedge_Infos[]
     query_halfedges_in_box: (box, output_list) ->
+
+        if @_halfedge_bvh == null
+            @generateBVH()
 
         if output_list == undefined
             output_list = []
@@ -617,7 +653,8 @@ class SCRIB.PolylineGraphPostProcessor
     #BDS.BVH2D = generateBVH() [requires @_graph]
     generateBVH: () ->
 
-        polylines = @facesToPolylines(@_face_vector)
+        # We need the external face for deleting unfilled polylines.
+        polylines = @facesToPolylines(@_face_vector, true)
         @_face_bvh = new BDS.BVH2D(polylines)
 
     # Converts to a set of polylines.
@@ -656,8 +693,9 @@ class SCRIB.PolylineGraphPostProcessor
         throw new Error("IMPLEMENT ME PLEASE!")
 
     ###
-    # Edge Queries.
-    # Returns elements within the edge bvh in the given area regions.
+    # Graph wide Edge Queries.
+    # Returns all elements in the graph within the given regions.
+    # NOTE: If you already have faces found, it will be better to use the Face_Info query functions.
     # Note: Edge queries are implemented by first performing a face query
     # and then perfomring edge queries on those face's edge bvh's in the Face_Info objects.
     ###
@@ -673,7 +711,7 @@ class SCRIB.PolylineGraphPostProcessor
     # BDS.Geometry, Halfedge_Info[] (Optional) -> SCRIB.Halfedge_Info[]
     query_edges_in_geometry: (geom, output) ->
 
-        hedge = @query_halfedges_in_box(geom.generateBoundingBox())
+        edges = @query_halfedges_in_box(geom.generateBoundingBox())
 
         for halfedge in edges
 
@@ -734,6 +772,31 @@ class SCRIB.PolylineGraphPostProcessor
 
         return @polylinesToAssociatedData(@_face_bvh.query_box_all(box))
 
+    # SCRIB.HalfedgeInfo[] --> SCRIB.EdgeInfo[]
+    halfedgesToEdges: (halfedge_infos) ->
+
+        output = []
+
+        # Don't include duplicate Edges.
+        set = new Set();
+
+        for halfedge_info in halfedge_infos
+
+            halfedge = halfedge_info.halfedge
+            edge     = halfedge.edge
+            id       = edge.id
+
+            # Avoid duplicates.
+            continue if set.has(id)
+
+            set.add(id)
+            edge_info = new SCRIB.Edge_Info(edge, halfedge_info)
+            output.push(edge_info)
+            continue
+
+        return output
+
+
     ###
     # Element Deletion Methods.
     # These delete all Halfedge Mesh elements within a given region.
@@ -744,8 +807,114 @@ class SCRIB.PolylineGraphPostProcessor
     # Deletes relevant halfedges, vertices, and face elements as well.
     # The user can get the results by calling .generate_faces_info()
     # SCRIB.Edge_Info -> ()
-    eraseEdges: (edges) ->
+    #params = {erase_lonely_vertices: true}
+    # specifies whether or not we will keep vertices of 0 degree that may be formed.
+    # along with their universal face.
+    eraseEdges: (edge_infos, params) ->
 
-    #SCRIB.Edge -> () [removes edge and relevant elements from the HalfedgeGraph]
-    # Redirects all of the othe pointers to restore the graph invariants.
-    _eraseEdge: (edge) ->
+        for edge_info in edge_infos
+            @_eraseEdge(edge_info, params)
+
+
+        @generateBVH()
+
+    # SCRIB.Edge -> ()
+    # [removes edge and related halfedges, vertices, relevant elements from the HalfedgeGraph]
+    # Redirects pointers to restore the graph invariants.
+    # FIXME: I need to think about dynamically updating the bounding volume hierarchies.
+    # I need to update the face one and the edge hierarchiy of the remaining face.
+    _eraseEdge: (edge_info, params) ->
+
+        edge = edge_info.edge
+
+        halfedge1 = edge.halfedge
+        halfedge2 = halfedge1.twin
+
+        vert1 = halfedge1.vertex
+        vert2 = halfedge2.vertex
+
+        degree1 = vert1.degree()
+        degree2 = vert2.degree()
+
+        face1 = halfedge1.face
+        face2 = halfedge2.face
+
+        # Demolish face1 and fix up the faces.
+
+        # We must merge and delete one of the faces if this edge lies on two faces.
+        merge_faces = (face1 != face2)
+
+        # We direct every halfedge on face2 to face1
+        # We merge to face1, because we have a pointer to its face_info for reconstructing a bvh.
+        # We destroy face2.
+        # Note: There is no need to do this or to destory the face if we are not merging.
+        # We can safely iterate around the face, because we have not yet made any changes.
+        if merge_faces
+
+            h0 = halfedge2.next
+            current = h0
+
+            loop
+                current.face = face1
+                current = current.next
+                break unless current != h0
+
+            face2.destroy()
+
+        # Destroy lonely vertices.
+        if degree1 == 1
+            if params.erase_lonely_vertices
+                vert1.destroy()
+            else
+                vert1.make_lonely()
+
+        if degree2 == 1
+
+            if params.erase_lonely_vertices
+                vert2.destroy()
+            else
+                vert2.make_lonely()
+
+        # demolish the remainder of a lonely edge.
+        # This halfedge is floating in space.
+        # We can simply delete everything, since nothing else points to this edge island.
+        if degree1 == 1 and degree2 == 1
+            face1.destroy()
+            edge.destroy()
+            halfedge1.destroy()
+            halfedge2.destroy()
+            return
+
+        # Redirect the face pointer to a valid halfedge.
+
+        # Fix either end of the halfedge path that doen't terminate in a tail point.
+        if degree2 > 1
+            next = halfedge1.next
+            prev = halfedge2.prev
+            next.prev = prev
+            prev.next = next
+            face1.halfedge = next # Safe pointer redirection.
+            vert2.halfedge = next # Safe pointer redirection.
+
+        # Other direction.
+        if degree1 > 1
+            next = halfedge2.next
+            prev = halfedge1.prev
+            next.prev = prev
+            prev.next = next
+            face1.halfedge = next # Safe.
+            vert1.halfedge = next
+
+        # Finally, we delete the edge and halfedges.
+        halfedge1.destroy()
+        halfedge2.destroy()
+        edge.destroy()
+
+        # Update the remaining face's bvh.
+        face_info = edge_info.halfedge_info.face_info
+        face_info.generateBVH()
+
+        return
+
+
+

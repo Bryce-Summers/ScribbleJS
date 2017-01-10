@@ -84,15 +84,15 @@ class SCRIB.PolylineGraphEmbedder
         Assumes all points are distinct.
         ###
         #SCRIB.Polyline -> SCRIB.Graph
-        embedPolyline: (inputs) ->
+        embedPolyline: (input) ->
 
             # Handle Trivial Input.
-            if inputs.size() <= 1
+            if input.size() <= 1
 
-                return @_trivial(inputs)
+                return @_trivial(input)
 
             # Make sure that the previous data is cleared.
-            @_loadPolyline(inputs)
+            @_loadPolyline(input)
 
             return @_do_the_rest()
 
