@@ -103,8 +103,6 @@ class SCRIB.Face_Info
         @faces_id_set = new Set()
         @faces_id_set.add(face.id)
         @id = face.id # The canonical id.
-        @complemented = false
-
 
         # Walk the face to create the edge and point info.
         starting_half_edge = face.halfedge
@@ -123,6 +121,8 @@ class SCRIB.Face_Info
             # while
             break unless starting_half_edge != current
 
+        
+        @complemented = @polyline.isComplemented()
         return
 
     size: () ->
@@ -147,6 +147,10 @@ class SCRIB.Face_Info
 
     isComplemented: () ->
         return @polyline.isComplemented()
+
+    # We need this for drawing unclosed polylines.
+    isExterior: () ->
+        return @isComplemented()
 
     # generates the bounding volume Hierarchies from scratch.
     #BDS.BVH2D = generateBVH() [requires @_graph]
@@ -276,6 +280,10 @@ class SCRIB.PolylineGraphPostProcessor
                     
                     result = @_face_bvh.remove(next_old_face.polyline)
                     console.log(result)
+
+                    # We want to find out what is wrong.
+                    if not result
+                        debugger
 
                 if next_old_index < old_faces.length
                     next_old_face = old_faces[next_old_index]
@@ -893,6 +901,7 @@ class SCRIB.PolylineGraphPostProcessor
     # specifies whether or not we will keep vertices of 0 degree that may be formed.
     # along with their universal face.
     eraseEdges: (edge_infos, params) ->
+
 
         for edge_info in edge_infos
             @_eraseEdge(edge_info, params)

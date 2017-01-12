@@ -33,7 +33,7 @@ function setup()
                         new BDS.Point(500, 500))
 
     line = new BDS.Polyline(true);
-    for(var i = 0; i < 50; i++)
+    for(var i = 0; i < 10; i++)
     {
         line.addPoint(range.getRandomPointInBox());
     }
@@ -56,13 +56,13 @@ function setup()
     line = new BDS.Polyline(false);
     line.addPoint(new BDS.Point(400, 10))
     line.addPoint(new BDS.Point(400, 250))
-    lines.push(line)
+    //lines.push(line)
 
     // A Straight Horizontal Line.
     line = new BDS.Polyline(false);
     line.addPoint(new BDS.Point(300, 50.01))
     line.addPoint(new BDS.Point(500, 50))
-    lines.push(line)
+    //lines.push(line)
 
     //* Testing Square.
     // FIXME: Handle problems with vertical line segments.
@@ -85,7 +85,7 @@ function setup()
         var s2 = new BDS.Point(x + 50, y + 50);
         var s3 = new BDS.Point(x + 50, y + 0);
         line = new BDS.Polyline(true, [s0, s1, s2, s3]);
-        lines.push(line);
+        //lines.push(line);
     }
     
 
@@ -111,6 +111,9 @@ function setup()
 // using HTML5 Canvas2D.
 function drawFaceInfoArray(G, face_info_array)
 {
+
+    var comp_faces = [];
+
     var len = face_info_array.length;
     for(var i = 0; i < len; i++)
     {
@@ -135,19 +138,27 @@ function drawFaceInfoArray(G, face_info_array)
         */
 
         // Draw Non-complemented faces.
-        if(!face.isComplemented())
+        if(!face.isExterior())
         {
-           G.fillColor(color);  
+           G.fillColor(color);
+           G.strokeColor(0x000000);
            G.drawPolygon(face.polyline);
+           G.drawPolyline(face.polyline);
         }
         else
         {
-            G.strokeColor(0x00ff00);
-            G.drawPolyline(face.polyline);
+            // Draw complemented faces later.
+            comp_faces.push(face);
         }
+    }
 
-        
-        
+    while(comp_faces.length > 0)
+    {
+        face = comp_faces.pop();
+
+        // Draw all of the complemented faces.
+        G.strokeColor(0xffffff);
+        G.drawPolyline(face.polyline);
     }
 }
 
@@ -179,7 +190,8 @@ function drawPolyLine_Array(G, polylines)
 function Fill_Bucket_Controller()
 {
     // The circle that follows the mouse.
-    this.mouse_circle = new BDS.Circle(new BDS.Point(0, 0), 20, true);
+    this.radius = 2;
+    this.mouse_circle = new BDS.Circle(new BDS.Point(0, 0), 15, true);
     this.faces_stored  = []
     this.colors_stored = []
 
@@ -262,7 +274,6 @@ Fill_Bucket_Controller.prototype =
 
             // Erase every edge and any trivial elements that arise.
             params = {erase_lonely_vertices: true}
-            edge_infos = [edge_infos[0]]
             EX.postProcessor.eraseEdges(edge_infos, params);
             this.faces = EX.postProcessor.generate_faces_info();
         }

@@ -42,14 +42,17 @@ Canvas_Drawer.prototype =
     // #rrggbb (number)
     strokeColor(color)
     {
-        str = color.toString(16);
+        // Create a hex color string with the full 6 characters.
+        var str = "000000" + color.toString(16);
+        str = str.substr(-6);
         this.ctx.strokeStyle = '#' + str;
     },
 
     // #rrggbb (number)
     fillColor(color)
     {
-        str = color.toString(16);
+        var str = "000000" + color.toString(16);
+        str = str.substr(-6);
         this.ctx.fillStyle = '#' + str;
     },
 

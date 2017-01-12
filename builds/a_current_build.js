@@ -1,8 +1,8 @@
 /*! Scribble JS, a project by Bryce Summers.
- *  Single File concatenated by Grunt Concatenate on 10-01-2017
+ *  Single File concatenated by Grunt Concatenate on 12-01-2017
  */
 /*! Bryce Data Structures, a project by Bryce Summers.
- *  Single File concatenated by Grunt Concatenate on 10-01-2017
+ *  Single File concatenated by Grunt Concatenate on 12-01-2017
  */
 /*
  * Defines namespaces.
@@ -1143,7 +1143,7 @@ FIXME: Return proper point in polyline tests for complemented filled polylines.
     };
 
     Polyline.prototype.isComplemented = function() {
-      return this.computeArea() > 0;
+      return this.computeArea() >= -0.0000001;
     };
 
     Polyline.prototype.ensureBoundingBox = function() {
@@ -3021,7 +3021,6 @@ Untested Features:
       this.faces_id_set = new Set();
       this.faces_id_set.add(face.id);
       this.id = face.id;
-      this.complemented = false;
       starting_half_edge = face.halfedge;
       current = starting_half_edge;
       while (true) {
@@ -3032,6 +3031,7 @@ Untested Features:
           break;
         }
       }
+      this.complemented = this.polyline.isComplemented();
     };
 
     Face_Info.prototype.size = function() {
@@ -3062,6 +3062,10 @@ Untested Features:
 
     Face_Info.prototype.isComplemented = function() {
       return this.polyline.isComplemented();
+    };
+
+    Face_Info.prototype.isExterior = function() {
+      return this.isComplemented();
     };
 
     Face_Info.prototype.generateBVH = function() {
@@ -3149,6 +3153,9 @@ Untested Features:
           if (this._face_bvh !== null) {
             result = this._face_bvh.remove(next_old_face.polyline);
             console.log(result);
+            if (!result) {
+              debugger;
+            }
           }
           if (next_old_index < old_faces.length) {
             next_old_face = old_faces[next_old_index];
