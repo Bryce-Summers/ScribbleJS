@@ -23,11 +23,22 @@ function setup()
 {
     EX.G = new Canvas_Drawer();
 
+
+    var lines = [];
+
+
+    // -- Random stuff.
     // Produce a random Scribble.
     range = new BDS.Box(new BDS.Point(0,   0),
                         new BDS.Point(500, 500))
 
-    var lines = [];
+    line = new BDS.Polyline(true);
+    for(var i = 0; i < 50; i++)
+    {
+        line.addPoint(range.getRandomPointInBox());
+    }
+    lines.push(line);
+
 
     // Star
     line = new BDS.Polyline(true);
@@ -37,25 +48,32 @@ function setup()
         x = 250 + 100*Math.cos(angle);
         y = 250 + 100*Math.sin(angle);
 
-        //line.addPoint(range.getRandomPointInBox());
         line.addPoint(new BDS.Point(x, y));
     }
-    lines.push(line);
+    //lines.push(line);
 
-    // A Straight Line.
+    // A Straight Vertical Line.
     line = new BDS.Polyline(false);
     line.addPoint(new BDS.Point(400, 10))
     line.addPoint(new BDS.Point(400, 250))
     lines.push(line)
 
-    /* Testing Square.
+    // A Straight Horizontal Line.
+    line = new BDS.Polyline(false);
+    line.addPoint(new BDS.Point(300, 50.01))
+    line.addPoint(new BDS.Point(500, 50))
+    lines.push(line)
+
+    //* Testing Square.
     // FIXME: Handle problems with vertical line segments.
     var line;
 
     var sq0 = new BDS.Point(50, 50);
     var sq1 = new BDS.Point(75, 75);
-    var squares = [sq0, sq1];
-
+    var sq2 = new BDS.Point(40, 40);
+    var sq3 = new BDS.Point(60, 60);
+    var squares = [sq0, sq1, sq2, sq3];
+    //lines = []
     for(var i = 0; i < squares.length; i++)
     {
         var pt = squares[i];
@@ -67,7 +85,10 @@ function setup()
         var s2 = new BDS.Point(x + 50, y + 50);
         var s3 = new BDS.Point(x + 50, y + 0);
         line = new BDS.Polyline(true, [s0, s1, s2, s3]);
+        lines.push(line);
     }
+    
+
 
     //*/
 
@@ -173,6 +194,7 @@ Fill_Bucket_Controller.prototype =
     mouse_down(event)
     {
         this.mouse_pressed = true;
+        this.mouse_move(event);
     },
 
     mouse_up(event)
@@ -240,6 +262,7 @@ Fill_Bucket_Controller.prototype =
 
             // Erase every edge and any trivial elements that arise.
             params = {erase_lonely_vertices: true}
+            edge_infos = [edge_infos[0]]
             EX.postProcessor.eraseEdges(edge_infos, params);
             this.faces = EX.postProcessor.generate_faces_info();
         }

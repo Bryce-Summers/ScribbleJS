@@ -9,3 +9,11 @@ Removal of lines and faces from BVH's.
 
 Add Screenshots of all examples.
 Construct an index.html website for viewing the examples online.
+
+Handle the embedding and intersection of degenerate inputs, such as collinear lines.
+
+Especially axis aligned boxes that
++---+----+---+
+|   |    |   |  (Two Overlapping, aligned boxes.)
+|   |    |   |
++---+----+---+

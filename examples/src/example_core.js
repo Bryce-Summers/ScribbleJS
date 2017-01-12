@@ -314,23 +314,24 @@ function onMouseMove( event )
     INPUT.mouse_move(event);
 }
 
-function onMouseDown( e )//event
+function onMouseDown( event )//event
 {
     //http://stackoverflow.com/questions/2405771/is-right-click-a-javascript-event
     var isRightMB;
-    e = e || window.event;
+    event = event || window.event;
 
-    if ("which" in e)  // Gecko (Firefox), WebKit (Safari/Chrome) & Opera
-        isRightMB = e.which == 3; 
-    else if ("button" in e)  // IE, Opera 
-        isRightMB = e.button == 2; 
+    if ("which" in event)  // Gecko (Firefox), WebKit (Safari/Chrome) & Opera
+        isRightMB = event.which == 3; 
+    else if ("button" in event)  // IE, Opera 
+        isRightMB = event.button == 2; 
 
+    // Ignore right bouse button.
     if(isRightMB)
         return
 
     event = {x: event.x, y: event.y};
-    translateEvent(e);
-    INPUT.mouse_down(e);
+    translateEvent(event);
+    INPUT.mouse_down(event);
 }
 
 function onMouseUp( event )

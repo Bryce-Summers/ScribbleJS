@@ -75,7 +75,16 @@ class SCRIB.Halfedge_Info
 class SCRIB.Face_Info
 
     # Input is a SCRIB.Face
-    constructor: (@face) ->
+    constructor: (face) ->
+
+        @generateInfoFromFace(face)
+
+    generateInfoFromFace: (face) ->
+
+        if face == undefined
+            face = @face
+        else
+            @face = face
 
         # SCRIB.Face_Info[]
         @holes  = []
@@ -88,13 +97,33 @@ class SCRIB.Face_Info
 
         # The polyline that is used to represent this face in a face BVH.
         @polyline = new BDS.Polyline(true) # Closed.
-        @polyline.setAssociatedData(@) # Provide a reference back to this class for BVH query calls.
+        @polyline.setAssociatedData(@) # Provide a reference back to this class for BVH query calls.      
 
         # Contains a set of all faces contributing to this unioned face.
         @faces_id_set = new Set()
-
+        @faces_id_set.add(face.id)
+        @id = face.id # The canonical id.
         @complemented = false
 
+
+        # Walk the face to create the edge and point info.
+        starting_half_edge = face.halfedge
+        current = starting_half_edge
+
+        # Convert the entire face into Halfedge Info Objects.
+        loop # DO
+                     
+            halfedge_info = new SCRIB.Halfedge_Info(current, @)
+
+            @push(halfedge_info)
+
+            # Iterate.
+            current = current.next
+
+            # while
+            break unless starting_half_edge != current
+
+        return
 
     size: () ->
         return @points.length
@@ -106,7 +135,7 @@ class SCRIB.Face_Info
         return @points[@points.length - 1]
 
     push: (halfedge_info) ->
-        @points.push(halfedge_info)
+        @halfedges.push(halfedge_info)
         @polyline.addPoint(halfedge_info.point)
 
     pop: () ->
@@ -189,7 +218,7 @@ class SCRIB.Face_Info
 class SCRIB.PolylineGraphPostProcessor
 
 
-    constructor: () ->
+    constructor: (@_graph) ->
     
         # This is the main structure
         @_graph = null
@@ -198,7 +227,7 @@ class SCRIB.PolylineGraphPostProcessor
         # If this is loaded, then future calls to convert_to_face_infos will
         # preserve the faces that still exist in the halfedgemesh in their output.
         # It is also required foor algorithms such as tail clipping.
-        @_face_vector = null
+        @_face_vector = []
 
         # Used for face queries.
         @_face_bvh = null
@@ -209,48 +238,101 @@ class SCRIB.PolylineGraphPostProcessor
     # Generates a Face_Info array from the current state of the graph object.
     # sets the internal @_face_vector, which is needed for many algorithms.
     # Users should store the returned face vector and refer to it for the output results of many of these algorithms.
+    # This is a very important function. It removes faces that no longer exist and updates the bvh if needed.
+    # O(|old_faces| + |newly_allocated_faces| * log(n) for bounding volume hierarchy modifications, if needed.)
+    # In general, you ought to generate faces the first time, before allocating the bvh.
+    # The bvh may become less optimized as it goes along.
     generate_faces_info: () ->
-        
-        #SCRIB.Face_Info[]
-        output = []
 
+        #SCRIB.Face_Info[]
+        # the ideas is that since faces are sorted by id, we will have a one-to-one coorespoindence between old faces and
+        # the faces iterated through the Halfedgegraph.
+        old_faces = @_face_vector
+        next_old_index = 0
+        next_old_face = null
+        if old_faces.length > 0
+            next_old_face = old_faces[next_old_index]
+            next_old_index++
+
+        # We will go along and 
+        # 1. Filter out face_infos for faces that no longer exist
+        # 2. Instantiate new face_infos for faces that now exist.
+        #SCRIB.Face_Info[]
+        @_face_vector = []
+
+        # Iterate through All faces in the graph.
         iter = @_graph.facesBegin()
         while iter.hasNext()
 
             face = iter.next()
 
+            # Skip over old faces until we get to a relevant one.
+            # Remove them from the bvh as we go.
+            # We take advantage of the fact that faces are stored in id order from least to greatest.
+            while next_old_face != null and next_old_face.id < face.id
+
+                # Remove the destroyed face from the bvh.
+                if @_face_bvh != null
+                    
+                    result = @_face_bvh.remove(next_old_face.polyline)
+                    console.log(result)
+
+                if next_old_index < old_faces.length
+                    next_old_face = old_faces[next_old_index]
+                    next_old_index++
+                else
+                    # No more old faces.
+                    next_old_face = null
+
+            # Add the old faces that still exist.
+            # Nothing needs to change!
+            if next_old_face != null and next_old_face.id == face.id
+                @_face_vector.push(next_old_face);
+
+                if next_old_index < old_faces.length
+                    next_old_face = old_faces[next_old_index]
+                    next_old_index++
+                else
+                    next_old_face = null
+                continue
+
+            # Allocate new face_infos, add them to the bvh, if it exists.
             face_output = new SCRIB.Face_Info(face) # Closed Polyline.
-            face_output.faces_id_set.add(face.id)
+            @_face_vector.push(face_output)
 
-            starting_half_edge = face.halfedge
-            current            = starting_half_edge
+            if @_face_bvh != null
+                @_face_bvh.add(face_output.polyline)
 
-            # Convert the entire face into Halfedge Info Objects.
-            loop # DO
-                         
-                halfedge_info = new SCRIB.Halfedge_Info(current, face_output)
-
-                face_output.halfedges.push(halfedge_info)
-                face_output.polyline.addPoint(halfedge_info.point)
-
-                # Iterate.
-                current = current.next
-
-                # while
-                break unless starting_half_edge != current
-
-            output.push(face_output)
             continue
-            # End of while iteration loop.
+            # End of iteration over all faces.
 
-        @_face_vector = output
-        return output
+        # Remove the remaining old faces that no longer have a counterpart in the graph.
+        while next_old_face != null
+
+            if @_face_bvh != null
+                    
+                result = @_face_bvh.remove(next_old_face.polyline)
+                console.log(result)
+
+                if next_old_index < old_faces.length
+                    next_old_face = old_faces[next_old_index]
+                    next_old_index++
+                else
+                    # No more old faces.
+                    next_old_face = null
+
+        # FIXME: Consider whether this is necessary.
+        if @_face_bvh != null
+            @_face_bvh.optimize()
+
+        return @_face_vector
 
     get_current_faces_info: () ->
         return @_face_vector
 
     load_graph: (@_graph) -> # Invalidates the previous face vector.
-        @_face_vector = null
+        @_face_vector = []
+        @_face_bvh = null
 
     # These seem a bit silly outside of C++, but maybe they will be useful to folks.
     free_face_vector: () ->
@@ -815,8 +897,11 @@ class SCRIB.PolylineGraphPostProcessor
         for edge_info in edge_infos
             @_eraseEdge(edge_info, params)
 
+        # Generate an updated set of faces, which will also dynamicaly remove and add faces to the bvh.
+        @generate_faces_info()
 
-        @generateBVH()
+        return
+
 
     # SCRIB.Edge -> ()
     # [removes edge and related halfedges, vertices, relevant elements from the HalfedgeGraph]
@@ -827,8 +912,19 @@ class SCRIB.PolylineGraphPostProcessor
 
         edge = edge_info.edge
 
-        halfedge1 = edge.halfedge
-        halfedge2 = halfedge1.twin
+        # All we need to think about from this point forward
+        # is that the two halfedges are twins of each other.
+        #face1 = edge_info.halfedge_info.face_info.face
+        
+        # We want the merge to face to be the face info that we have a pointer to.
+        # Because we want the non-merged face to be deleted during generate_faces_info()
+        face_info = edge_info.halfedge_info.face_info
+        if edge.halfedge.face.id == face_info.id
+            halfedge1 = edge.halfedge
+            halfedge2 = halfedge1.twin
+        else
+            halfedge2 = edge.halfedge
+            halfedge1 = halfedge2.twin
 
         vert1 = halfedge1.vertex
         vert2 = halfedge2.vertex
@@ -886,7 +982,6 @@ class SCRIB.PolylineGraphPostProcessor
             return
 
         # Redirect the face pointer to a valid halfedge.
-
         # Fix either end of the halfedge path that doen't terminate in a tail point.
         if degree2 > 1
             next = halfedge1.next
@@ -905,16 +1000,59 @@ class SCRIB.PolylineGraphPostProcessor
             face1.halfedge = next # Safe.
             vert1.halfedge = next
 
+        # Handle Line Splitting.
+        # If there is a face with a 0 area region, such as an embedded non-closed polyline,
+        # then deletion in the middle of line touching the same face on both sides
+        #  will actually produce an extra complementd face.
+        if not merge_faces and degree1 > 1 and degree2 > 1
+
+            # We will use a brand new face for face 2 now.
+            face_new = SCRIB.PolylineGraphEmbedder.newFace(@_graph)
+            face_old = face1
+            next1 = halfedge1.next
+            next2 = halfedge2.next
+            
+            face_old.halfedge = next1
+            face_new.halfedge = next2
+
+            # Update all of the pointers on face2.
+            start = face_new.halfedge
+            current = start
+
+            # Since we have already fixed up the faces,
+            # We simply iterate over all edge in the face.
+            loop # DO
+                current.face = face_new
+                current = current.next
+
+                # WHILE
+                break unless current != start
+
+
         # Finally, we delete the edge and halfedges.
         halfedge1.destroy()
         halfedge2.destroy()
         edge.destroy()
 
-        # Update the remaining face's bvh.
-        face_info = edge_info.halfedge_info.face_info
-        face_info.generateBVH()
+        # If we have a previously valid face bvh,
+        # then we need to update the state for the face that we are keeping.
+        # Update the bvh state 
+        # Update the face info that is still in use with a correct bvh.
+        if @_face_bvh != null
+    
+            # Extract the legacy face info.        
+            face_info = edge_info.halfedge_info.face_info
+
+            # Remove its no longer valid polyline from the bvh.
+            @_face_bvh.remove(face_info.polyline)
+
+            # Genrate new internal data based on face_info.face
+            face_info.generateInfoFromFace(face1)
+
+            # Generate its internal BVH, but this might be going overboard and too soon.
+            face_info.generateBVH()
+
+            # Add the face_info's new polyline to the bvh to replace the older one.
+            @_face_bvh.add(face_info.polyline)
 
         return
-
-
-
