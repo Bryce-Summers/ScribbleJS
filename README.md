@@ -4,6 +4,8 @@ A library for doing useful geometric things from collections of scribbles.
 # Official Website Site with live examples.
 https://bryce-summers.github.io/ScribbleJS/
 
+![ScribbleJS example image of eraser tool in action.](https://github.com/Bryce-Summers/ScribbleJS/blob/master/screenshots/Eraser_Tool4.png "ScribbleJS Eraser Tool Example Image")
+
 # License
 This work is dedicated to the public domain.
 
