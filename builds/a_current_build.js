@@ -2612,6 +2612,7 @@ SCRIB = {};
       var i, intersector, j, line, numLines, ref;
       intersector = new BDS.Intersector();
       if (this._useFastAlgo) {
+        console.log("Using fast");
         intersector.intersectLineSegments(this._lines_initial);
       } else {
         intersector.intersect_brute_force(this._lines_initial);
@@ -3290,7 +3291,8 @@ Untested Features:
       if (this._face_bvh !== null && face_info.face.data.marked === true) {
         this._face_bvh.remove(face_info.polyline);
         face_info.generateInfoFromFace();
-        return this._face_bvh.add(face_info.polyline);
+        this._face_bvh.add(face_info.polyline);
+        return face_info.face.data.marked = false;
       }
     };
 

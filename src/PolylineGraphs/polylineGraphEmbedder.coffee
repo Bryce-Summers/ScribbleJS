@@ -280,7 +280,7 @@ class SCRIB.PolylineGraphEmbedder
         # Use a custom made O(maximum vertical overlap * log(maximum vertical overlap).
         # Very small constant factors, cache friendly.
         if (@_useFastAlgo)
-
+            
             intersector.intersectLineSegments(@_lines_initial)
         else
             # Naive brute force algo.
