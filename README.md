@@ -1,12 +1,14 @@
 # ScribbleJS
 A library for doing useful geometric things from collections of scribbles.
 
+# Official Website Site with live examples.
+https://bryce-summers.github.io/ScribbleJS/
+
 # License
 This work is dedicated to the public domain.
 
-
 # Installation
-Run 'npm install' in a command promt or terminal.
+Run 'npm install' in a command prompt or terminal.
 
 # Building
 1. Open up two terminals.
@@ -23,3 +25,11 @@ Run 'npm install' in a command promt or terminal.
  
  
 It may be useful to install python 3 and run python -m http.server in a command prompt to run a local server.
+
+<h2> Dependancies </h2>
+<p>
+This project was developed concurrently with a centralized repository for my javascript data structures. This project therefore requires the <a = href"https://github.com/Bryce-Summers/BDS.js" target="_blank">Bryce Data Structures</a> submodule. This means that after you clone the repository from github, you may have to run the following commands in your favorite terminal:
+<pre>
+git submodule init
+git submodule update
+</pre>

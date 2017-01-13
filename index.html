@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+<link href='https://fonts.googleapis.com/css?family=Roboto' rel='stylesheet' type='text/css'>
+<link rel="stylesheet" type="text/css" href="style.css">
+
+</head>
+
+</head>
+
+<body>
+
+
+<title>Scribble JS</title>
+
+<center><h1> Scribble JS </h1></center>
+
+<div id="content">
+
+<h2> Introduction </h2>
+
+<p>
+Scribble JS presents a collection of sophisticated tools for creating 2D topologies from sets of polylines.
+It can be used to implement things like vector paintbrushes and geometric collision detection and representation for games. This started out as a port of my Openframeworks <a href="https://github.com/Bryce-Summers/ofxScribbleSegmenter" target="_blank">Scribble Segmenter Tool.</a>
+</p>
+
+<p>
+Click on the links or the pictures to see the example working on the internet. I invite you to have as much fun as possible with these examples.
+</p>
+
+<p>
+You may find the source code on Github at: <a href="https://github.com/Bryce-Summers/ScribbleJS" target="_blank">https://github.com/Bryce-Summers/ScribbleJS</a>
+
+For your own, projects please look at the source code for the example projects. To use Scribble.JS in your own project, you will only need the latest build file, which may be found <a href="https://github.com/Bryce-Summers/ScribbleJS/tree/master/builds" target="_blank">here</a>a>, along with a knowledge of the functionalities provided by this project.
+</p>
+
+<h2> Dependancies </h2>
+<p>
+This project was developed concurrently with a centralized repository for my javascript data structures. This project therefore requires the <a = href"https://github.com/Bryce-Summers/BDS.js" target="_blank">Bryce Data Structures</a> submodule. This means that after you clone the repository from github, you may have to run the following commands in your favorite terminal:
+<pre>
+git submodule init
+git submodule update
+</pre>
+
+Running these commands fetches the Bryce Data Structures code.
+</p>
+
+<center><h1> Example Capabilities </h1></center>
+
+<h2> Line Splitting </h2>
+<p> Click <a href="./examples/line_splits.html" target="_blank"> here</a> to see this working online.</p>
+<a href="./examples/line_splits.html" target="_blank"> 
+<img class="displayed" src="screenshots/line_splitting.png" alt="Line Splitting Example Image"></a>
+
+<h2> Face Finding </h2>
+<p> <a href="./examples/face_finding.html" target="_blank"> Online!</a> </p>
+<a href="./examples/face_finding.html" target="_blank">
+<img class="displayed" src="screenshots/Face_Finding2.png" alt="Face Finding Example Image."></a>
+
+<h2> Bounding Volume Hierarchy Formation </h2>
+<p> <a href="./examples/face_bvh.html" target="_blank"> Online!</a> </p>
+<a href="./examples/face_bvh.html" target="_blank">
+<img class="displayed" src="screenshots/bvh2.png" alt="Bounding Volume Hierarchy Example Image "> </a>
+
+<h2> Eraser Tool </h2>
+<p> <a href="./examples/eraser_tool.html" target="_blank"> Online!</a> </p>
+<a href="./examples/eraser_tool.html" target="_blank">
+<img class="displayed" src="screenshots/Eraser_Tool_3.png" alt="Eraser Tool Example Image"></a>
+
+<h2> Vector Paintbrush Tool </h2>
+
+<p> Coming Soon! </p>
+
+<center><h1> Features </h1></center>
+
+<p> This will be a deeper dive into the capabilities of Scribble.JS, which will be written in the future, when I have some more free time.</p>
+
+<h3> Features </h3>
+<ul>
+<li>Polyline Sets to HalfedgeMesh</li>
+<li>Halfedge Erasing, with deletion of lonely vertices.</li>
+<li>Not yet fully ported and tested: The removal of trivial area tails. </li>
+<li>Not yet fully tested and ported: Shallow Merging of faces.</li>
+</ul>
+
+</div> <!-- End of Content -->
+</body>
+</html>
