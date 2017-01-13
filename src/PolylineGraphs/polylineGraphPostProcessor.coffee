@@ -268,7 +268,7 @@ class SCRIB.PolylineGraphPostProcessor
         iter = @_graph.facesBegin()
         while iter.hasNext()
 
-            face = iter.next()
+            face = iter.next();
 
             # Skip over old faces until we get to a relevant one.
             # Remove them from the bvh as we go.
@@ -296,6 +296,7 @@ class SCRIB.PolylineGraphPostProcessor
             # Nothing needs to change!
             if next_old_face != null and next_old_face.id == face.id
                 @_face_vector.push(next_old_face);
+                console.log(next_old_face.id)
 
                 if next_old_index < old_faces.length
                     next_old_face = old_faces[next_old_index]
@@ -919,7 +920,8 @@ class SCRIB.PolylineGraphPostProcessor
     # I need to update the face one and the edge hierarchiy of the remaining face.
     _eraseEdge: (edge_info, params) ->
 
-        edge = edge_info.edge
+        halfedge_info = edge_info.halfedge_info
+        face_info     = halfedge_info.face_info
 
         # All we need to think about from this point forward
         # is that the two halfedges are twins of each other.
@@ -927,13 +929,10 @@ class SCRIB.PolylineGraphPostProcessor
         
         # We want the merge to face to be the face info that we have a pointer to.
         # Because we want the non-merged face to be deleted during generate_faces_info()
-        face_info = edge_info.halfedge_info.face_info
-        if edge.halfedge.face.id == face_info.id
-            halfedge1 = edge.halfedge
-            halfedge2 = halfedge1.twin
-        else
-            halfedge2 = edge.halfedge
-            halfedge1 = halfedge2.twin
+        halfedge1 = halfedge_info.halfedge
+        halfedge2 = halfedge1.twin
+
+        edge = halfedge1.edge
 
         vert1 = halfedge1.vertex
         vert2 = halfedge2.vertex
@@ -1049,9 +1048,6 @@ class SCRIB.PolylineGraphPostProcessor
         # Update the face info that is still in use with a correct bvh.
         if @_face_bvh != null
     
-            # Extract the legacy face info.        
-            face_info = edge_info.halfedge_info.face_info
-
             # Remove its no longer valid polyline from the bvh.
             @_face_bvh.remove(face_info.polyline)
 

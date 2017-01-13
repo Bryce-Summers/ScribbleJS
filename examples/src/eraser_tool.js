@@ -33,11 +33,11 @@ function setup()
                         new BDS.Point(500, 500))
 
     line = new BDS.Polyline(true);
-    for(var i = 0; i < 10; i++)
+    for(var i = 0; i < 50; i++)
     {
         line.addPoint(range.getRandomPointInBox());
     }
-    lines.push(line);
+    //lines.push(line);
 
 
     // Star
@@ -50,7 +50,19 @@ function setup()
 
         line.addPoint(new BDS.Point(x, y));
     }
-    //lines.push(line);
+    lines.push(line);
+
+    // Star
+    line = new BDS.Polyline(true);
+    for (var i = 0; i < 5; i++)
+    {
+        var angle = i*Math.PI*4/5
+        x = 275 + 100*Math.cos(angle);
+        y = 275 + 100*Math.sin(angle);
+
+        line.addPoint(new BDS.Point(x, y));
+    }
+    lines.push(line);
 
     // A Straight Vertical Line.
     line = new BDS.Polyline(false);
@@ -191,7 +203,7 @@ function Fill_Bucket_Controller()
 {
     // The circle that follows the mouse.
     this.radius = 2;
-    this.mouse_circle = new BDS.Circle(new BDS.Point(0, 0), 15, true);
+    this.mouse_circle = new BDS.Circle(new BDS.Point(0, 0), 10, true);
     this.faces_stored  = []
     this.colors_stored = []
 

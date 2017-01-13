@@ -1,5 +1,5 @@
 /*! Scribble JS, a project by Bryce Summers.
- *  Single File concatenated by Grunt Concatenate on 12-01-2017
+ *  Single File concatenated by Grunt Concatenate on 13-01-2017
  */
 /*! Bryce Data Structures, a project by Bryce Summers.
  *  Single File concatenated by Grunt Concatenate on 12-01-2017
@@ -1139,11 +1139,11 @@ FIXME: Return proper point in polyline tests for complemented filled polylines.
         area += (p2.x + p1.x) * (p2.y - p1.y);
         p1 = p2;
       }
-      return area / 2.0;
+      return -area / 2.0;
     };
 
     Polyline.prototype.isComplemented = function() {
-      return this.computeArea() >= -0.0000001;
+      return this.computeArea() <= 0.0000001;
     };
 
     Polyline.prototype.ensureBoundingBox = function() {
@@ -3166,6 +3166,7 @@ Untested Features:
         }
         if (next_old_face !== null && next_old_face.id === face.id) {
           this._face_vector.push(next_old_face);
+          console.log(next_old_face.id);
           if (next_old_index < old_faces.length) {
             next_old_face = old_faces[next_old_index];
             next_old_index++;
@@ -3635,16 +3636,12 @@ Untested Features:
     };
 
     PolylineGraphPostProcessor.prototype._eraseEdge = function(edge_info, params) {
-      var current, degree1, degree2, edge, face1, face2, face_info, face_new, face_old, h0, halfedge1, halfedge2, merge_faces, next, next1, next2, prev, start, vert1, vert2;
-      edge = edge_info.edge;
-      face_info = edge_info.halfedge_info.face_info;
-      if (edge.halfedge.face.id === face_info.id) {
-        halfedge1 = edge.halfedge;
-        halfedge2 = halfedge1.twin;
-      } else {
-        halfedge2 = edge.halfedge;
-        halfedge1 = halfedge2.twin;
-      }
+      var current, degree1, degree2, edge, face1, face2, face_info, face_new, face_old, h0, halfedge1, halfedge2, halfedge_info, merge_faces, next, next1, next2, prev, start, vert1, vert2;
+      halfedge_info = edge_info.halfedge_info;
+      face_info = halfedge_info.face_info;
+      halfedge1 = halfedge_info.halfedge;
+      halfedge2 = halfedge1.twin;
+      edge = halfedge1.edge;
       vert1 = halfedge1.vertex;
       vert2 = halfedge2.vertex;
       degree1 = vert1.degree();
@@ -3722,7 +3719,6 @@ Untested Features:
       halfedge2.destroy();
       edge.destroy();
       if (this._face_bvh !== null) {
-        face_info = edge_info.halfedge_info.face_info;
         this._face_bvh.remove(face_info.polyline);
         face_info.generateInfoFromFace(face1);
         face_info.generateBVH();
