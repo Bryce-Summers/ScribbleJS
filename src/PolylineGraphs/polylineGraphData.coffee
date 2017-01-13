@@ -51,6 +51,9 @@ class SCRIB.Face_Data
         # Scrib.Face[] 
         hole_representatives = []
 
+        # A Pointer to a SCRIB.Face_Info object.
+        @info = null
+
     addHole: (hole) ->
 
         hole_representatives.push(hole)
@@ -84,6 +87,8 @@ class SCRIB.Vertex_Data
         ###
         @outgoing_edges = []
 
+        @info = null
+
     isExtraordinary: () ->
 
         return @tail_point || @intersection_point
@@ -94,6 +99,7 @@ class SCRIB.Edge_Data
     constructor: (@edge) ->
 
         @marked = false
+        @info = null
 
 
 class SCRIB.Halfedge_Data
@@ -102,6 +108,9 @@ class SCRIB.Halfedge_Data
     
         @marked = false
         @next_extraordinary = null
+
+        # A Pointer to a SCRIB.Face_Info object.
+        @info = null
 
     # A Halfedge will be labeled as extraordinary iff its vertex is an intersection point or a tail_point.
     isExtraordinary: () ->

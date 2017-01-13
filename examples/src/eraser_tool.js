@@ -37,7 +37,7 @@ function setup()
     {
         line.addPoint(range.getRandomPointInBox());
     }
-    //lines.push(line);
+    lines.push(line);
 
 
     // Star
@@ -78,12 +78,13 @@ function setup()
 
     //* Testing Square.
     // FIXME: Handle problems with vertical line segments.
+    // We currently can't handle inputs with lines that are perfectly on top of each other or collinear.
     var line;
 
     var sq0 = new BDS.Point(50, 50);
-    var sq1 = new BDS.Point(75, 75);
-    var sq2 = new BDS.Point(40, 40);
-    var sq3 = new BDS.Point(60, 60);
+    var sq1 = new BDS.Point(75, 50);
+    var sq2 = new BDS.Point(100, 50);
+    var sq3 = new BDS.Point(125, 50);
     var squares = [sq0, sq1, sq2, sq3];
     //lines = []
     for(var i = 0; i < squares.length; i++)
@@ -99,6 +100,7 @@ function setup()
         line = new BDS.Polyline(true, [s0, s1, s2, s3]);
         //lines.push(line);
     }
+    //lines.push(line);
     
 
 
@@ -203,7 +205,7 @@ function Fill_Bucket_Controller()
 {
     // The circle that follows the mouse.
     this.radius = 2;
-    this.mouse_circle = new BDS.Circle(new BDS.Point(0, 0), 10, true);
+    this.mouse_circle = new BDS.Circle(new BDS.Point(0, 0), 20, true);
     this.faces_stored  = []
     this.colors_stored = []
 

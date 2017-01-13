@@ -17,3 +17,6 @@ Especially axis aligned boxes that
 |   |    |   |  (Two Overlapping, aligned boxes.)
 |   |    |   |
 +---+----+---+
+
+
+Write some explicit tests for BVH's and Halfedge Meshes, such as validty checking.
