@@ -21,3 +21,12 @@ Handle the display off internal islands in the examples.
 Implement 4 or 5 coloring and the selection of a pleasing array of colors.
 
 Think about better example images.
+
+
+Spruce up the examples:
+ - Use a well thougght out color scheme.
+ - For line splitting, enable the user to draw lines point by point.
+ - For face finding, perhaps allow the user to draw lines.
+ - For bvh formation, highlight the boxes in the bvh that their cursor is intersecting.
+   Think about Line weights and styles.
+ - For the eraser tool, sort the faces by area, to make sure internal islands get drawn on top of containing faces.

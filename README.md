@@ -35,3 +35,8 @@ This project was developed concurrently with a centralized repository for my jav
 git submodule init
 git submodule update
 </pre>
+
+
+# Features
+
+![ScribbleJS work diagram image.](https://github.com/Bryce-Summers/ScribbleJS/blob/master/screenshots/Work_Diagram.png "ScribbleJS Work Diagram Image.")
