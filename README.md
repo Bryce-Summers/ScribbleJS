@@ -1,5 +1,5 @@
 # ScribbleJS
-A library for doing useful geometric things from collections of scribbles.
+A library for doing useful geometric things from collections of polylines.
 
 # Official Website Site with live examples.
 https://bryce-summers.github.io/ScribbleJS/
