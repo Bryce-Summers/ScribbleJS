@@ -16,7 +16,7 @@
    version="1.1"
    inkscape:version="0.91 r13725"
    sodipodi:docname="Work_Diagram.svg"
-   inkscape:export-filename="C:\Users\Bryce-LabtopY700\Desktop\Consultancy Work\Work_Diagram.png"
+   inkscape:export-filename="D:\GIT\ScribbleJS\screenshots\Work_Diagram.png"
    inkscape:export-xdpi="100"
    inkscape:export-ydpi="100">
   <defs
@@ -29,7 +29,7 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="0.98994949"
-     inkscape:cx="294.66708"
+     inkscape:cx="397.27896"
      inkscape:cy="382.5"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
@@ -97,7 +97,7 @@
              height="58.57143"
              width="767.14282"
              id="rect3356" /></flowRegion><flowPara
-           id="flowPara3358">CurveJS work tree for Wick</flowPara><flowPara
+           id="flowPara3358">CurveJS work Tree</flowPara><flowPara
            id="flowPara3360" /></flowRoot>      <flowRoot
          transform="translate(55.714286,58.076491)"
          style="font-style:normal;font-weight:normal;font-size:30px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
@@ -533,7 +533,7 @@
              id="tspan4278-7"
              x="535.29797"
              y="1034.0164"
-             style="font-size:17.5px">User (a.k.a Zach and Luca) Feature</tspan></text>
+             style="font-size:17.5px">User Feature</tspan></text>
       </g>
       <g
          transform="translate(0,-2.9458389)"
