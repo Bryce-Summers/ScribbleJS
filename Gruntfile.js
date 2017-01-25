@@ -23,7 +23,7 @@ module.exports = function (grunt) {
         },
         dist: {
             // Include one level down, two levels down, three levels down, then main
-            src: ['modules/BDS.js/builds/a_current_build.js', // Bryce Data Structures Library Dependancy.
+            src: [ // Bryce Data Structures Library Dependancy.
             'src/namespace.js', 'lib/*/*.js', 'lib/*/*/*.js', 'lib/*/*/*/*.js'],
             dest: 'builds/a_current_build.js',
         },
