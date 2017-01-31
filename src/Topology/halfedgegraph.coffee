@@ -295,6 +295,7 @@ class SCRIB.Halfedge
 
         # SCRIB.Vertex
         @vertex = null
+        
 
         # SCRIB.Halfedge_Data
         @data = null

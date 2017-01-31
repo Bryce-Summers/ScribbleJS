@@ -52,7 +52,7 @@ class SCRIB.Face_Data
         hole_representatives = []
 
         # A Pointer to a SCRIB.Face_Info object.
-        @info = null
+        @info    = null
 
     addHole: (hole) ->
 
