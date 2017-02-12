@@ -49,14 +49,12 @@ class SCRIB.FaceGraph
         for key, value of @faces
             id_degrees.push([parseInt(key), value.length])
 
-        ###
         id_degrees.sort(
             (a, b) -> 
                 degree1 = a[1]
                 degree2 = b[1]
                 return degree1 - degree2
             )
-        ###
 
         face_id_order = []
         for id_degree in id_degrees

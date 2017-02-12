@@ -1680,15 +1680,12 @@ Purpose: Represents face to face connectivity, such as that needed for coloring.
         value = ref[key];
         id_degrees.push([parseInt(key), value.length]);
       }
-
-      /*
-      id_degrees.sort(
-          (a, b) -> 
-              degree1 = a[1]
-              degree2 = b[1]
-              return degree1 - degree2
-          )
-       */
+      id_degrees.sort(function(a, b) {
+        var degree1, degree2;
+        degree1 = a[1];
+        degree2 = b[1];
+        return degree1 - degree2;
+      });
       face_id_order = [];
       for (i = 0, len = id_degrees.length; i < len; i++) {
         id_degree = id_degrees[i];
