@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
     <head>
-        <title>ScribbleJS - Fill_Bucket</title>
+        <title>ScribbleJS - Automatic Coloring</title>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
         <style>
@@ -15,6 +15,12 @@
                 background-color: #000000;
                 margin: 0px;
                 overflow: hidden;
+
+                /* these all go together to ensure bounded centered page. */
+                max-width: 900px;
+                margin-left: auto;
+                margin-right: auto;
+                /* ----------- */
             }
 
             #info {
@@ -33,17 +39,19 @@
     </head>
     <body>
 
-        <h1>Scribble Fill Bucket Example</h1>
-        <h2>Drag your mouse and click.</h2>
+        <h1>Automatic Coloring Tool</h1>
+        <h2>Click and Drag your mouse to delete elements. Faces are drawn with non-conflicting colors. Try to force as many colors as possible.
+        Observe the Chromatic structure of graphs.
+        </h2>
         <canvas id="theCanvas" width="500" height="500"></canvas>
 
         <div id="container"></div>
         
         <script src="../builds/a_current_build.js"></script>
         <script src="../modules/BDS.js/builds/a_current_build.js"></script>
-        
+
         <script src="src/example_core.js"></script>
-        <script src="src/fill_bucket.js"></script>
+        <script src="src/coloring.js"></script>
     
     </body>
 </html>

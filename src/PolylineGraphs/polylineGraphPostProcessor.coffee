@@ -1025,6 +1025,7 @@ class SCRIB.PolylineGraphPostProcessor
     # Redirects pointers to restore the graph invariants.
     # FIXME: I need to think about dynamically updating the bounding volume hierarchies.
     # I need to update the face one and the edge hierarchiy of the remaining face.
+    # FIXME: Reduce this using the SCRIB.TopologyLinker
     _eraseEdge: (edge_info, params) ->
 
         halfedge = edge_info.edge.halfedge

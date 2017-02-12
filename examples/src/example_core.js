@@ -78,6 +78,7 @@ Canvas_Drawer.prototype =
         return red + green + blue
     },
 
+    // [0, 255] range integer color constructor.
     newColor(red, green, blue)
     {
         red   = red << 16;
