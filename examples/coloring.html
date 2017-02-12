@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>ScribbleJS - Automatic Coloring</title>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+        <style>
+            body {
+                color: #ffffff;
+                font-family:Monospace;
+                font-size:13px;
+                text-align:center;
+                font-weight: bold;
+
+                background-color: #000000;
+                margin: 0px;
+                overflow: hidden;
+            }
+
+            #info {
+                position: absolute;
+                top: 0px; width: 100%;
+                padding: 5px;
+            }
+
+            a {
+
+                color: #ffffff;
+            }
+
+            #oldie a { color:#da0 }
+        </style>
+    </head>
+    <body>
+
+        <h1>Automatic Coloring Tool</h1>
+        <h2>Click and Drag your mouse to delete elements. Faces are drawn with non-conflicting colors. Try to force as many colors as possible.
+        Observe the Chromatic structure of graphs.
+        </h2>
+        <canvas id="theCanvas" width="500" height="500"></canvas>
+
+        <div id="container"></div>
+        
+        <script src="../builds/a_current_build.js"></script>
+        <script src="../modules/BDS.js/builds/a_current_build.js"></script>
+
+        <script src="src/example_core.js"></script>
+        <script src="src/coloring.js"></script>
+    
+    </body>
+</html>
