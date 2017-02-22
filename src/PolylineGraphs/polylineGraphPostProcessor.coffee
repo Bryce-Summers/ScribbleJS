@@ -33,7 +33,7 @@ Untested Features:
 
 ###
 
-class SCRIB.Verex_Info
+class SCRIB.Vertex_Info
     constructor: (@vertex) ->
         @id = @vertex.id
         @vertex.data.info = @
@@ -856,6 +856,8 @@ class SCRIB.PolylineGraphPostProcessor
         polylines = @facesToPolylines(@_face_vector, true)
         @_face_bvh = new BDS.BVH2D(polylines)
 
+        return
+
     # Converts to a set of polylines.
     # For applications such as element querying, it may be best to leave out complemented_faces.
     # Face_Info[], bool (optional) -> Polyline[]
@@ -888,8 +890,127 @@ class SCRIB.PolylineGraphPostProcessor
     # Splits the current embedding by the given polyline.
     # Updates the internal line and face bvh's
     # BDS.Polyline -> ()
-    embedAnotherPolyline: (polyLine) ->
-        throw new Error("IMPLEMENT ME PLEASE!")
+    embedAnotherPolyline: (polyline) ->
+        
+        # We need singleton polylines to compute 2D line segemnt intersections.
+        singletonPolylines = polyline.toPolylineSegments()
+
+        # We will need this guy for instantiating new elements inside of the linker.
+        generator = new SCRIB.PolylineGraphGenerator(@_graph)
+
+        # We will use a linker to update the topology and embed the line.
+        linker = new SCRIB.TopologyLinker(generator, @_graph)
+
+        # Instantiate a vert for every point in the input polyline.
+        verts = []
+        v0 = generator.newVertex()
+        v0.data.point = singletonPolylines[0].getPoint(0)
+        verts.push(v0)
+
+        for line in singletonPolylines
+            vert = generator.newVertex()
+            vert.data.point = line.getPoint(1)
+            verts.push(vert)
+
+        # Embedding nothing and points is easy, they just sit there.
+        if verts.length < 2
+            return
+
+        # We will store an array of all of the lowest resolution list of split line segments.
+        # We will gradually grow this as more are split.
+        split_lines = []
+        split_verts = [] # split_lines indices*2 + 0 or 1 line up with split_line_verts.
+
+        # For every one of the original segments in the input, we will do a local search for intersections,
+        # and dice them up, while adding them to the split_lines array.
+        # This pass splits up the input polyline segments and topologically splits the original graph as necessary.
+        for index in [0...singletonPolylines.length] by 1
+
+            # The start of the splits associated with this segment.
+            split_lines_start_index = split_lines.length
+            line = singletonPolylines[index]
+            split_lines.push(line)
+
+            # This is a record of the start and ending verts for each split line.
+            split_verts.push(verts[index])
+            split_verts.push(verts[index + 1])
+
+            box = line.ensureBoundingBox()
+
+            # We only need to check for intersection among the edges in the bounding box of this segment.
+            # Enumerate potential edges that collide with the singleton line segment.
+            halfedge_candidates = @query_halfedges_in_box(box)
+            edge_candidates     = @halfedgesToEdges(halfedge_candidates)
+
+            for edge_info in edge_candidates
+                edge  = edge_info.edge
+
+                halfedge = edge.halfedge
+                twin     = halfedge.twin
+                v1       = halfedge.vertex
+                v2       = twin.vertex
+                line2 = new BDS.Polyline(false, [v1.data.point, v2.data.point]) # Singleton Line.
+
+                # If we split a line, then we need to update the bvh info.
+                modified = false
+
+                # Iterate over the current set of split lines.
+                # We only need to iterate over the original list, because no split off lines will reintersect this edge.
+                for split_line_index in [split_lines_start_index...split_lines.length] by 1
+                  line = split_lines[split_line_index]
+                  # Check for a collision.
+                  if line.detect_intersection_with_polyline(line2)
+
+                    modified = true
+
+                    # Then extract the one meaningful intersection point.
+                    intersection_list = line.report_intersections_with_polyline(line2)
+                    vert_point = intersection_list[0] # Only 1 intersection for segment, segment intersection.
+
+                    i_vert = generator.newVertex()
+                    i_vert.data.point = vert_point
+
+                    # Split the intersected edge at the intersection vertex.
+                    # This will allow us to link the split lines back in later in the second pass.
+                    linker.split_edge_with_vert(edge, i_vert)
+
+                    # Split the point, so that future intersections will have the appropriate start and end points.
+
+                    [old_line, new_line] = line.splitPolyline(vert_point, 0)
+                    split_lines[split_line_index] = old_line # We shrink the current line and continue to check for intersections.
+                    old_end_vert = split_verts[split_line_index*2 + 1]
+                    split_verts[split_line_index*2 + 1] = i_vert # Update the end vert to the intersection vert.
+
+                    split_lines.push(new_line) # We check for intersections with the new line at a later time.
+                    split_verts.push(i_vert)
+                    split_verts.push(old_end_vert)
+
+                    continue
+
+                # We regenerate the face bvh's, because other segments might want to split the edges additional times
+                # otherwise we may be resplitting edges that no longer exist.
+                # FIXME: Look into incremental BVH modifications.
+                # This works, because no faces have been created or destroyed yet. Only edge splits have occured up to this point.
+                if modified
+                    face1 = halfedge.face
+                    face2 = twin.face
+                    face1.data.info.generateBVH()
+                    if face1 != face2
+                        face2.data.info.generateBVH()
+
+        # Now that the original graph has been properly split, and we have split up the input segments,
+        # we can now link up the split embeded polyline.
+        for index in [0...split_verts.length] by 2
+            v1 = split_verts[index]
+            v2 = split_verts[index + 1]
+
+            linker.link_verts(v1, v2)
+    
+        # Update Collision Detection and Onscreen Rendering structures.
+        @_face_vector = []
+        @generate_faces_info()
+        @generateBVH()
+        return
 
     ###
     # Graph wide Edge Queries.

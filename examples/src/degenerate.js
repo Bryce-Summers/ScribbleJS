@@ -9,24 +9,28 @@ function main()
 {
 
     G = new Canvas_Drawer();
-
     
-    p0 = new BDS.Point(0, 250);
+    p0 = new BDS.Point(100, 250);
     p1 = new BDS.Point(500, 250);
+    p2 = new BDS.Point(500, 275);
 
-    // Horizontal Line.
-    var line1 = new BDS.Polyline(false, [p0, p1]);
-
-    // -- Spiral.
-    geom = new Geometry_Generator();
-    var line2 = geom.spiral();
+    // Line of size 0.
+    // Does this produce a universal face???
+    var line1 = new BDS.Polyline(false, []);
 
     G.drawPolyline(line1);
-    G.drawPolyline(line2);  
+
+    // Line of size 1
+    var line2 = new BDS.Polyline(false, [p0]);
+    
+    G.drawCircle(new BDS.Circle(p0, 20, true));
+
+    var line3 = new BDS.Polyline(false, [p1, p2]);
+    G.drawPolyline(line3);
 
     // Embed the polylines within a graph.
     var embedder = new SCRIB.PolylineGraphEmbedder();
-    var graph = embedder.embedPolylineArray([line1, line2]);
+    var graph = embedder.embedPolylineArray([line1, line2, line3]);
 
     // Now Use a Post Processor to derive easy to work with structures which may be drawn to the screen.
     var postProcessor = new SCRIB.PolylineGraphPostProcessor();

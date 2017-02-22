@@ -2,7 +2,7 @@
  * faces bvh example.js
  * Written by Bryce Summers on 1 - 6 - 2017.
  *
- * Purpose: Demonstrates a vector fill bucket tool.
+ * Purpose: Demonstrates a vector area erase tool with proper topology relinking.
  */
 
 // Small Example scope.

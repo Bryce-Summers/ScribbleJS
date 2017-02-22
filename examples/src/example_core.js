@@ -13,11 +13,11 @@ function Canvas_Drawer()
     this.ctx.strokeStyle = '#ffffff';
 
     // FIXME: Get the actual dimensions of the canvas.
-    w = 500;
-    h = 500;
+    this.w = 500;
+    this.h = 500;
 
     // Black color.
-    this._background_color = 0x000000;
+    this._background_color = 0xaaaaaa;
 }
 
 Canvas_Drawer.prototype =
@@ -165,6 +165,19 @@ Canvas_Drawer.prototype =
         ctx.stroke();
     },
 
+    drawScreenBounds()
+    {
+        pts = []
+        pts.push(new BDS.Point(1,      1));
+        pts.push(new BDS.Point(this.w, 1));
+        pts.push(new BDS.Point(this.w, this.h));
+        pts.push(new BDS.Point(1,      this.h));
+        polyline = new BDS.Polyline(true, pts, false);
+
+        this.fillColor(0xffffff);
+        this.drawPolyline(polyline);
+    },
+
     // Draws a SCRIB.Polyline.
     drawPolyline(polyline)
     {
@@ -221,6 +234,7 @@ Canvas_Drawer.prototype =
   
     },
 
+    // Takes a BDS.Circle and draws it to the screen.
     drawCircle(circle)
     {
         var position = circle.getPosition();
@@ -240,8 +254,131 @@ Canvas_Drawer.prototype =
             ctx.fill();
         }
         ctx.stroke();
+    },
+
+    drawText(str, x, y)
+    {
+        var ctx = this.ctx;
+        ctx.fillText(str, x, y);
+    }
+}
+
+// Used for debugging.
+// Prints, counts, and unit tests the halfedge graph.
+// This should be called from the console.
+function printHalfedgeMesh()
+{
+    var iter = EX.Graph.halfedgesBegin();
+
+    while(iter.hasNext())
+    {
+
+        halfedge = iter.next();
+        console.log(halfedge);
+
+        ASSERT(halfedge.edge != null);
+        ASSERT(halfedge.twin != null);
+        ASSERT(halfedge.twin.twin == halfedge);
+        ASSERT(halfedge.next != null);
+        ASSERT(halfedge.prev != null);
+        ASSERT(halfedge.next.prev == halfedge);
+        ASSERT(halfedge.prev.next == halfedge);
     }
 
+    // -- Test edges.
+    var iter = EX.Graph.edgesBegin();
+    while(iter.hasNext())
+    {
+        edge = iter.next();
+        ASSERT(edge.halfedge.edge == edge);
+    }
+
+    var iter = EX.Graph.facesBegin();
+    while(iter.hasNext())
+    {
+        face = iter.next();
+        printFace(face);// Print the faces present.
+        ASSERT(face.halfedge.face == face);
+    }
+
+    ASSERT(EX.Graph.numHalfedges() == EX.Graph.numEdges()*2);
+
+    console.log("TotalHalfedges = " + EX.Graph.numHalfedges());
+    console.log("TotalEdges = " + EX.Graph.numEdges());
+    console.log("TotalFaces = "     + EX.Graph.numFaces());
+    console.log("TotalVerts = "     + EX.Graph.numVertices());
+
+    return "All Tests have passed";
+}
+
+function printFace(face)
+{
+    console.log(face);
+    var out = ""
+    var start   = face.halfedge;
+    var current = start;
+
+    do
+    {
+        //ASSERT(current.face == face);
+        console.log("vert " + current.vertex.id + "--> face " + current.face.id)
+        out = out + "" + current.vertex.id + ", "
+        current = current.next;
+    }while(current != start);
+
+    console.log(out);
+
+    var out = ""
+    var start   = face.halfedge;
+    var current = start;
+
+    // Watch out for cycles.
+    var hare = start;
+
+    do
+    {
+        ASSERT(current.face == face);
+        out = out + "" + current.vertex.id + ", "
+        current = current.prev;
+        hare = hare.prev.prev;
+
+        if (current != start && hare == current)
+        {
+            console.log("ERROR: Malformed previous pointers.");
+            throw new Error("Errof: Malformed previous pointer.");
+            ASSERT(false);
+        }
+
+    }while(current != start);
+    console.log("Face Backwards.");
+    console.log(out);
+}
+
+function printHalfedge(halfedge)
+{
+    out = ""
+    out = out + halfedge.vertex.id + " --> " + halfedge.twin.vertex.id
+    console.log(out);
+    return out
+}
+
+function printEdge(edge)
+{
+    out = ""
+    out = out + edge.halfedge.vertex.id + " <--> " + edge.halfedge.twin.vertex.id
+    console.log(out);
+    return out   
+}
+
+function ASSERT(b)
+{
+    if(!b)
+    {
+        err = new Error()
+        console.log(err.stack)
+        debugger
+        throw new Error("Assertion Failed!")
+    }
 }
 
 function Geometry_Generator()

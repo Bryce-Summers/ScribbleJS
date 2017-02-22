@@ -30,3 +30,5 @@ Spruce up the examples:
  - For bvh formation, highlight the boxes in the bvh that their cursor is intersecting.
    Think about Line weights and styles.
  - For the eraser tool, sort the faces by area, to make sure internal islands get drawn on top of containing faces.
+
+ - In the line embedding, I need to check for self-intersections.

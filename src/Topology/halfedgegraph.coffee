@@ -245,8 +245,10 @@ class SCRIB.Vertex
     destroy: () ->
         @_iterator.remove()
 
-    alone: () ->
-        return @halfedge == null
+    isAlone: () ->
+        # Null, non populated vertex or
+        # Self looping unitary halfedge.
+        return @halfedge == null or @halfedge.next == @halfedge
 
     # ASSSUMES: Well formed halfedge mesh.
     degree: () ->
@@ -263,7 +265,29 @@ class SCRIB.Vertex
         return count
 
     make_lonely: () ->
+        debugger
+
+        # FIXME: I should use the Topology linker's link island functionality.
+
         @halfedge = null
+
+    # Returns the outgoing halfedge from this vertex to the given vertex.
+    get_outgoing_halfedge_to: (vert) ->
+        start = @halfedge.twin
+        current = start.next.twin
+
+        # Loop around searching for the appropriate outgoing halfedge.
+        loop
+
+            # Check current halfedge for the goal vertex.
+            if current.vertex == vert
+                return current.twin
+
+            if current == start
+                debugger;
+                throw Error("Vert not found!");
+
+            current = current.next.twin
 
 # Non directed edges, very useful for getting consecutive ID's within input polylines.
 class SCRIB.Edge

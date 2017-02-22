@@ -1,5 +1,5 @@
 /*! Scribble JS, a project by Bryce Summers.
- *  Single File concatenated by Grunt Concatenate on 12-02-2017
+ *  Single File concatenated by Grunt Concatenate on 21-02-2017
  */
 /*
  * Defines namespaces.
@@ -264,44 +264,15 @@ SCRIB = {};
     };
 
     PolylineGraphEmbedder.prototype._trivial = function(polyline) {
-      var edge, exterior, exterior_data, graph, halfedge, interior, interior_data, twin, vertex, vertex_data;
+      var graph, linker, vertex, vertex_data;
       graph = this._newGraph();
       if (polyline.size() < 1) {
         return graph;
       }
-
-      /*
-      We construct one of each element for the singleton graph.
-      NOTE: This allocation is a wrapper on top of the Graph allocation function, which allocates its Vertex_Data object.
-      the other functions this->new[ ____ ] work in the same way.
-       */
-      vertex = this._newVertex();
+      linker = new SCRIB.TopologyLinker(SCRIB.PolylineGraphEmbedder, graph);
+      vertex = linker.link_island_vertex();
       vertex_data = vertex.data;
-      edge = this._newEdge();
-      interior = this._newFace();
-      exterior = this._newFace();
-      interior_data = interior.data;
-      exterior_data = exterior.data;
-      halfedge = this._newHalfedge();
-      twin = this._newHalfedge();
       vertex_data.point = polyline.getPoint(0);
-      vertex.halfedge = halfedge;
-      edge.halfedge = halfedge;
-      interior.halfedge = halfedge;
-      interior_data.addHole(exterior);
-      exterior.halfedge = halfedge;
-      halfedge.edge = edge;
-      halfedge.face = exterior;
-      halfedge.next = halfedge;
-      halfedge.prev = halfedge;
-      halfedge.twin = twin;
-      halfedge.vertex = vertex;
-      twin.edge = edge;
-      twin.face = interior;
-      twin.next = twin;
-      twin.prev = twin;
-      twin.twin = halfedge;
-      twin.vertex = vertex;
       return graph;
     };
 
@@ -539,7 +510,7 @@ SCRIB = {};
      */
 
     PolylineGraphEmbedder.prototype._associate_halfedge_cycles = function() {
-      var degree, halfedge, hedge_in, hedge_out, i, iter, j, outgoing_edges, ref, vert, vert_data;
+      var degree, hedge_in, hedge_out, i, iter, j, linker, outgoing_edges, ref, vert, vert_data;
       iter = this._graph.verticesBegin();
       while (iter.hasNext()) {
         vert = iter.next();
@@ -547,10 +518,9 @@ SCRIB = {};
         outgoing_edges = vert_data.outgoing_edges;
         degree = outgoing_edges.length;
         if (degree === 0) {
+          linker = new SCRIB.TopologyLinker(SCRIB.PolylineGraphEmbedder, this._graph);
+          linker.link_island_vertex(vert);
           vert_data.singleton_point = true;
-          halfedge = vert.halfedge;
-          halfedge.next = halfedge;
-          halfedge.prev = halfedge;
           continue;
         }
         if (degree === 1) {
@@ -697,6 +667,80 @@ SCRIB = {};
 
   })();
 
+  SCRIB.PolylineGraphGenerator = (function() {
+    function PolylineGraphGenerator(_graph) {
+      this._graph = _graph;
+    }
+
+    PolylineGraphGenerator.prototype.newGraph = function() {
+      return SCRIB.PolylineGraphEmbedder.newGraph();
+    };
+
+    PolylineGraphGenerator.prototype.newFace = function(graph) {
+      if (!graph) {
+        graph = this._graph;
+      }
+      return SCRIB.PolylineGraphEmbedder.newFace(graph);
+    };
+
+    PolylineGraphGenerator.prototype.newEdge = function(graph) {
+      if (!graph) {
+        graph = this._graph;
+      }
+      return SCRIB.PolylineGraphEmbedder.newEdge(graph);
+    };
+
+    PolylineGraphGenerator.prototype.newHalfedge = function(graph) {
+      if (!graph) {
+        graph = this._graph;
+      }
+      return SCRIB.PolylineGraphEmbedder.newHalfedge(graph);
+    };
+
+    PolylineGraphGenerator.prototype.newVertex = function(graph) {
+      if (!graph) {
+        graph = this._graph;
+      }
+      return SCRIB.PolylineGraphEmbedder.newVertex(graph);
+    };
+
+    PolylineGraphGenerator.prototype.line_side_test = function(vert1, vert2, vert3) {
+      var pt_c, ray;
+      pt_c = vert3.data.point;
+      ray = this._ray(vert1, vert2);
+      return ray.line_side_test(pt_c);
+    };
+
+    PolylineGraphGenerator.prototype.vert_in_angle = function(vert_a, vert_b, vert_c, vert_pt) {
+      var angle1, angle2, angle_pt, ray1, ray2, ray_pt;
+      ray1 = this._ray(vert_b, vert_c);
+      ray2 = this._ray(vert_b, vert_a);
+      ray_pt = this._ray(vert_b, vert_pt);
+      angle1 = ray1.getAngle();
+      angle2 = ray2.getAngle();
+      angle_pt = ray_pt.getAngle();
+      if (angle2 <= angle1) {
+        angle2 += Math.PI * 2;
+      }
+      if (angle_pt < angle1) {
+        angle_pt += Math.PI * 2;
+      }
+      return angle1 <= angle_pt && angle_pt <= angle2;
+    };
+
+    PolylineGraphGenerator.prototype._ray = function(v1, v2) {
+      var a, b, dir, ray;
+      a = v1.data.point;
+      b = v2.data.point;
+      dir = b.sub(a);
+      ray = new BDS.Ray(a, dir, 1);
+      return ray;
+    };
+
+    return PolylineGraphGenerator;
+
+  })();
+
 }).call(this);
 
 // Generated by CoffeeScript 1.11.1
@@ -737,14 +781,14 @@ Untested Features:
  */
 
 (function() {
-  SCRIB.Verex_Info = (function() {
-    function Verex_Info(vertex1) {
+  SCRIB.Vertex_Info = (function() {
+    function Vertex_Info(vertex1) {
       this.vertex = vertex1;
       this.id = this.vertex.id;
       this.vertex.data.info = this;
     }
 
-    return Verex_Info;
+    return Vertex_Info;
 
   })();
 
@@ -1358,7 +1402,7 @@ Untested Features:
     PolylineGraphPostProcessor.prototype.generateBVH = function() {
       var polylines;
       polylines = this.facesToPolylines(this._face_vector, true);
-      return this._face_bvh = new BDS.BVH2D(polylines);
+      this._face_bvh = new BDS.BVH2D(polylines);
     };
 
     PolylineGraphPostProcessor.prototype.facesToPolylines = function(face_infos, allow_complemented_faces) {
@@ -1388,8 +1432,81 @@ Untested Features:
       return output;
     };
 
-    PolylineGraphPostProcessor.prototype.embedAnotherPolyline = function(polyLine) {
-      throw new Error("IMPLEMENT ME PLEASE!");
+    PolylineGraphPostProcessor.prototype.embedAnotherPolyline = function(polyline) {
+      var box, edge, edge_candidates, edge_info, face1, face2, generator, halfedge, halfedge_candidates, i_vert, index, intersection_list, j, k, l, len1, len2, line, line2, linker, m, modified, n, new_line, old_end_vert, old_line, ref, ref1, ref2, ref3, ref4, singletonPolylines, split_line_index, split_lines, split_lines_start_index, split_verts, twin, v0, v1, v2, vert, vert_point, verts;
+      singletonPolylines = polyline.toPolylineSegments();
+      generator = new SCRIB.PolylineGraphGenerator(this._graph);
+      linker = new SCRIB.TopologyLinker(generator, this._graph);
+      verts = [];
+      v0 = generator.newVertex();
+      v0.data.point = singletonPolylines[0].getPoint(0);
+      verts.push(v0);
+      for (j = 0, len1 = singletonPolylines.length; j < len1; j++) {
+        line = singletonPolylines[j];
+        vert = generator.newVertex();
+        vert.data.point = line.getPoint(1);
+        verts.push(vert);
+      }
+      if (verts.length < 2) {
+        return;
+      }
+      split_lines = [];
+      split_verts = [];
+      for (index = k = 0, ref = singletonPolylines.length; k < ref; index = k += 1) {
+        split_lines_start_index = split_lines.length;
+        line = singletonPolylines[index];
+        split_lines.push(line);
+        split_verts.push(verts[index]);
+        split_verts.push(verts[index + 1]);
+        box = line.ensureBoundingBox();
+        halfedge_candidates = this.query_halfedges_in_box(box);
+        edge_candidates = this.halfedgesToEdges(halfedge_candidates);
+        for (l = 0, len2 = edge_candidates.length; l < len2; l++) {
+          edge_info = edge_candidates[l];
+          edge = edge_info.edge;
+          halfedge = edge.halfedge;
+          twin = halfedge.twin;
+          v1 = halfedge.vertex;
+          v2 = twin.vertex;
+          line2 = new BDS.Polyline(false, [v1.data.point, v2.data.point]);
+          modified = false;
+          for (split_line_index = m = ref1 = split_lines_start_index, ref2 = split_lines.length; m < ref2; split_line_index = m += 1) {
+            line = split_lines[split_line_index];
+            if (line.detect_intersection_with_polyline(line2)) {
+              modified = true;
+              intersection_list = line.report_intersections_with_polyline(line2);
+              vert_point = intersection_list[0];
+              i_vert = generator.newVertex();
+              i_vert.data.point = vert_point;
+              linker.split_edge_with_vert(edge, i_vert);
+              ref3 = line.splitPolyline(vert_point, 0), old_line = ref3[0], new_line = ref3[1];
+              split_lines[split_line_index] = old_line;
+              old_end_vert = split_verts[split_line_index * 2 + 1];
+              split_verts[split_line_index * 2 + 1] = i_vert;
+              split_lines.push(new_line);
+              split_verts.push(i_vert);
+              split_verts.push(old_end_vert);
+              continue;
+            }
+          }
+          if (modified) {
+            face1 = halfedge.face;
+            face2 = twin.face;
+            face1.data.info.generateBVH();
+            if (face1 !== face2) {
+              face2.data.info.generateBVH();
+            }
+          }
+        }
+      }
+      for (index = n = 0, ref4 = split_verts.length; n < ref4; index = n += 2) {
+        v1 = split_verts[index];
+        v2 = split_verts[index + 1];
+        linker.link_verts(v1, v2);
+      }
+      this._face_vector = [];
+      this.generate_faces_info();
+      this.generateBVH();
     };
 
 
@@ -1988,8 +2105,8 @@ class SCRIB.Edge_Data
       return this._iterator.remove();
     };
 
-    Vertex.prototype.alone = function() {
-      return this.halfedge === null;
+    Vertex.prototype.isAlone = function() {
+      return this.halfedge === null || this.halfedge.next === this.halfedge;
     };
 
     Vertex.prototype.degree = function() {
@@ -2006,7 +2123,24 @@ class SCRIB.Edge_Data
     };
 
     Vertex.prototype.make_lonely = function() {
+      debugger;
       return this.halfedge = null;
+    };
+
+    Vertex.prototype.get_outgoing_halfedge_to = function(vert) {
+      var current, start;
+      start = this.halfedge.twin;
+      current = start.next.twin;
+      while (true) {
+        if (current.vertex === vert) {
+          return current.twin;
+        }
+        if (current === start) {
+          debugger;
+          throw Error("Vert not found!");
+        }
+        current = current.next.twin;
+      }
     };
 
     return Vertex;
@@ -2077,44 +2211,126 @@ Terminology:
     Island: A singleton vertex.
     Continent: A connected component surrounded by an external face.
     Tail: A region including edges that have the same face on both sides.
+
+    unlinked: an element that contains only null pointers.
+    linked: an element that contains relevant pointers to other elements, which is assumed to fullfill the topological invariants of a Halfedgemesh.
  */
 
 (function() {
   SCRIB.TopologyLinker = (function() {
-    function TopologyLinker() {}
+    function TopologyLinker(generator, graph) {
+      this.generator = generator;
+      this.graph = graph;
+    }
 
-    TopologyLinker.link_island_vertex = function(vertex, edge, halfedge, twin, interior, exterior) {
-      vertex.halfedge = halfedge;
-      edge.halfedge = halfedge;
-      interior.halfedge = halfedge;
-      exterior.halfedge = halfedge;
-      halfedge.edge = edge;
-      halfedge.face = exterior;
-      halfedge.next = halfedge;
-      halfedge.prev = halfedge;
-      halfedge.twin = twin;
-      halfedge.vertex = vertex;
-      twin.edge = edge;
-      twin.face = interior;
-      twin.next = twin;
-      twin.prev = twin;
-      twin.twin = halfedge;
-      twin.vertex = vertex;
+    TopologyLinker.prototype.link_island_vertex = function(vertex) {
+      vertex.halfedge = null;
+
+      /*
+      edge     = @generator.newEdge(@graph)
+      halfedge = @generator.newHalfedge(@graph)
+      twin     = @generator.newHalfedge(@graph)
+      interior = @generator.newFace(@graph)
+      exterior = @generator.newFace(@graph)
+      
+       * 1 point Sub Graph.
+      
+      vertex.halfedge = halfedge
+      edge.halfedge   = halfedge
+      
+       * The interior is trivial and is defined by a trivial internal and external null area point boundary.
+      
+       * Self referential exterior loop.
+      halfedge.edge   = edge
+      halfedge.face   = exterior
+      halfedge.next   = halfedge
+      halfedge.prev   = halfedge
+      halfedge.twin   = twin
+      halfedge.vertex = vertex
+      exterior.halfedge = halfedge
+      
+       * Self referential interior loop.
+      twin.edge   = edge
+      twin.face   = interior
+      twin.next   = twin
+      twin.prev   = twin
+      twin.twin   = halfedge
+      twin.vertex = vertex
+      interior.halfedge = twin
+       */
+      return vertex;
     };
 
-    TopologyLinker.link_edge_to_vertices = function(v1, v2, new_edge, new_he1, new_he2, new_face) {
-      var he1, he2, next1, next2, ref;
-      ref = this.find_cycle_containing_both_verts(v1, v2), next1 = ref[0], next2 = ref[1];
-      if (next1 === null) {
-        this.split_face_by_adding_edge(next1, next2, new_edge, new_he1, new_he2, new_face);
+    TopologyLinker.prototype.unlink_island_vertex = function(vertex) {
+
+      /*
+      he1   = vertex.halfedge
+      he2   = he1.twin
+      edge  = he1.edge
+      face1 = he1.face
+      face2 = he2.face
+      
+      he1.destroy()
+      he2.destroy()
+      edge.destroy()
+      face1.destroy()
+      face2.destroy()
+      
+      vertex.halfedge = null
+       */
+    };
+
+    TopologyLinker.prototype.link_verts = function(v1, v2) {
+      var external_he, he1, he2, next1, next2, ref;
+      if (v1.isAlone() && v2.isAlone()) {
+        this.unlink_island_vertex(v1);
+        this.unlink_island_vertex(v2);
+        this.link_vert_line_continent([v1, v2]);
         return;
       }
-      he1 = this.find_complemented_cycle_at_vert(v1);
-      he2 = this.find_complemented_cycle_at_vert(v2);
-      return this.union_faces_by_adding_edge(he1, he2, new_edge, new_he1, new_he2, new_face);
+      if (v1.isAlone()) {
+        this.unlink_island_vertex(v1);
+        external_he = this.find_halfedge_at_vert_containing_vert(v2, v1);
+        this.link_vert_to_external_face(v1, external_he);
+        return;
+      }
+      if (v2.isAlone()) {
+        this.unlink_island_vertex(v2);
+        external_he = this.find_halfedge_at_vert_containing_vert(v1, v2);
+        this.link_vert_to_external_face(v2, external_he);
+        return;
+      }
+      ref = this.find_cycle_containing_vert_segment(v1, v2), next1 = ref[0], next2 = ref[1];
+      if (next1 !== null) {
+        this.split_face_by_adding_edge(next1, next2);
+        return;
+      }
+      he1 = this.find_halfedge_at_vert_containing_vert(v1, v2);
+      he2 = this.find_halfedge_at_vert_containing_vert(v2, v1);
+      this.union_faces_by_adding_edge(he1, he2);
     };
 
-    TopologyLinker.find_outgoing_halfedge_on_cycle = function(halfedge_on_cycle, target_vertex) {
+    TopologyLinker.prototype.find_halfedge_at_vert_containing_vert = function(star_vert, target_vert) {
+      var current, next, start, vert_a, vert_b, vert_c;
+      start = star_vert.halfedge;
+      current = start;
+      while (true) {
+        next = current.twin.next;
+        vert_a = next.twin.vertex;
+        vert_b = star_vert;
+        vert_c = current.twin.vertex;
+        if (this.generator.vert_in_angle(vert_a, vert_b, vert_c, target_vert)) {
+          return next;
+        }
+        current = current.twin.next;
+        if (current === start) {
+          debugger;
+          throw new Error("Proper angle segment not found.");
+        }
+      }
+    };
+
+    TopologyLinker.prototype.find_outgoing_halfedge_on_cycle = function(halfedge_on_cycle, target_vertex) {
       var current, start;
       start = halfedge_on_cycle;
       current = start;
@@ -2130,7 +2346,7 @@ Terminology:
       return null;
     };
 
-    TopologyLinker.find_cycle_containing_both_verts = function(v1, v2) {
+    TopologyLinker.prototype.find_cycle_containing_both_verts = function(v1, v2) {
       var current, he_v2, start;
       start = v1.halfedge;
       current = start;
@@ -2147,7 +2363,124 @@ Terminology:
       return [null, null];
     };
 
-    TopologyLinker.find_complemented_cycle_at_vert = function(vert) {
+    TopologyLinker.prototype.find_cycle_containing_vert_segment = function(v1, v2) {
+      var a, b, ref;
+      ref = this.find_cycle_containing_both_verts(v1, v2), a = ref[0], b = ref[1];
+      if (a === null) {
+        return [null, null];
+      }
+      a = this.find_halfedge_at_vert_containing_vert(v1, v2);
+      b = this.find_halfedge_at_vert_containing_vert(v2, v1);
+      if (a.face !== b.face) {
+        debugger;
+        throw new Error("This should not be possible.");
+      }
+      return [a, b];
+
+      /*
+      start   = v1.halfedge
+      current = start
+      
+      start1 = null
+      end1   = null
+      start2 = null
+      end2   = null
+      
+       * Find a first pair.
+      loop
+          he_v2 = @find_outgoing_halfedge_on_cycle(current, v2)
+      
+          if he_v2 != null
+              start1 = current
+              end1   = he_v2
+              break
+      
+          current = current.twin.next
+          break unless current != start
+      
+       * Find a second pair.
+      current = current.twin.next
+      loop
+          he_v2 = @find_outgoing_halfedge_on_cycle(current, v2)
+      
+          if he_v2 != null
+              start2 = current
+              end2   = he_v2
+              break
+      
+          current = current.twin.next
+          break unless current != start
+      
+       * Case 1: Didn't find anything.
+      if start1 == null
+          return [null, null]
+      
+       * Case 2: At least one of the vertices has more than 1 outgoing halfedge on the same face.
+      start1 = @away_from_star_point(start1, end1)
+      start2 = @away_from_star_point(end1, start1)
+      
+       * If this halfedge goes left towards the vert, then it must be the right one.
+       * FIXME: This may fail with internal stars.
+      if @left_test(start1, v2)
+          return [start1, @towards_star_point(start2, start1)]
+      if @left_test(start2, v1)
+          return [start2, @towards_star_point(start1, start2)]
+      
+       * Case: 3: This is a loop topology, and we can safely use the alternate unique cycle.
+       * FIXME: This ignores internal stars.
+      return [start2, end2]
+       */
+    };
+
+    TopologyLinker.prototype.away_from_star_point = function(candidate_halfedge, target_halfedge) {
+      var current, start, vertex;
+      vertex = candidate_halfedge.vertex;
+      start = candidate_halfedge;
+      current = start;
+      while (true) {
+        current = current.next;
+        if (current === target_halfedge) {
+          return candidate_halfedge;
+        }
+        if (current.vertex === vertex) {
+          candidate_halfedge = current;
+        }
+        if (current === start) {
+          return candidate_halfedge;
+        }
+      }
+      throw new Error("Never get here.");
+    };
+
+    TopologyLinker.prototype.towards_star_point = function(candidate_halfedge, target_halfedge) {
+      var current, start, vertex;
+      vertex = candidate_halfedge.vertex;
+      start = candidate_halfedge;
+      current = start;
+      while (true) {
+        current = current.prev;
+        if (current === target_halfedge) {
+          return candidate_halfedge;
+        }
+        if (current.vertex === vertex) {
+          candidate_halfedge = current;
+        }
+        if (current === start) {
+          return candidate_halfedge;
+        }
+      }
+      throw new Error("Never get here.");
+    };
+
+    TopologyLinker.prototype.left_test = function(halfedge, target_vert) {
+      var vert1, vert2, vert_c;
+      vert1 = halfedge.vertex;
+      vert2 = halfedge.next.vertex;
+      vert_c = target_vert;
+      return this.generator.line_side_test(vert1, vert2, vert_c) < 0;
+    };
+
+    TopologyLinker.prototype.find_complemented_cycle_at_vert = function(vert) {
       var current, start;
       start = vert.halfedge;
       current = start;
@@ -2162,30 +2495,31 @@ Terminology:
       }
     };
 
-    TopologyLinker.is_cycle_complemented = function(halfedge) {
+    TopologyLinker.prototype.is_cycle_complemented = function(halfedge) {
       var addVert, polyline;
-      polyline = BDS.Polyline(true);
+      polyline = new BDS.Polyline(true);
       addVert = function(vert) {
-        return polyline.addPoint(vert.data.point);
+        return this.polyline.addPoint(vert.data.point);
       };
-      SCRIB.TopologyLinker.map_cycle_vertices(halfedge, addVert);
+      addVert.polyline = polyline;
+      this.map_cycle_vertices(halfedge, addVert);
       return polyline.isComplemented();
     };
 
-    TopologyLinker.map_cycle_vertices = function(halfedge, f_of_v) {
+    TopologyLinker.prototype.map_cycle_vertices = function(halfedge, f_of_v) {
       var current, start;
       start = halfedge;
       current = start;
       while (true) {
         f_of_v(current.vertex);
         current = current.next;
-        if (current === next) {
+        if (current === start) {
           break;
         }
       }
     };
 
-    TopologyLinker.find_outgoing_halfedge_on_face = function(vertex, face) {
+    TopologyLinker.prototype.find_outgoing_halfedge_on_face = function(vertex, face) {
       var current, start;
       start = vertex.halfedge;
       current = start;
@@ -2201,21 +2535,21 @@ Terminology:
       return null;
     };
 
-    TopologyLinker.split_face_by_adding_edge = function(he1, he2, new_edge, new_he1, new_he2, new_face) {
-      return this._link_edge_to_cycle_locations(he1, he2, new_edge, new_he1, new_he2, new_face);
+    TopologyLinker.prototype.split_face_by_adding_edge = function(he1, he2) {
+      return this._link_edge_to_cycle_locations(he1, he2);
     };
 
-    TopologyLinker.union_faces_by_adding_edge = function(he1, he2, new_edge, new_he1, new_he2, new_face) {
+    TopologyLinker.prototype.union_faces_by_adding_edge = function(he1, he2) {
       var face1, face2;
       face1 = he1.face;
       face2 = he2.face;
-      this._link_edge_to_cycle_locations(he1, he2, new_edge, new_he1, new_he2, new_face);
+      this._link_edge_to_cycle_locations(he1, he2);
       face1.destroy();
       return face2.destroy();
     };
 
-    TopologyLinker._link_edge_to_cycle_locations = function(he1, he2, new_edge, new_he1, new_he2, new_face) {
-      var next1, next2, old_face, prev1, prev2, vert1, vert2;
+    TopologyLinker.prototype._link_edge_to_cycle_locations = function(he1, he2) {
+      var new_edge, new_face, new_he1, new_he2, next1, next2, old_face, prev1, prev2, vert1, vert2;
       next1 = he1;
       next2 = he2;
       prev1 = next1.prev;
@@ -2223,6 +2557,10 @@ Terminology:
       vert1 = next1.vertex;
       vert2 = next2.vertex;
       old_face = next1.face;
+      new_edge = this.generator.newEdge();
+      new_he1 = this.generator.newHalfedge();
+      new_he2 = this.generator.newHalfedge();
+      new_face = this.generator.newFace();
       new_edge.halfedge = new_he1;
       new_he1.next = next2;
       new_he1.prev = prev1;
@@ -2235,29 +2573,59 @@ Terminology:
       new_he2.next = next1;
       new_he2.prev = prev2;
       new_he2.vertex = vert2;
-      new_he2.twin = new_halfedge1;
+      new_he2.twin = new_he1;
       new_he2.face = old_face;
-      new_he1.edge = new_edge;
+      new_he2.edge = new_edge;
       next1.prev = new_he2;
       prev2.next = new_he2;
-      this.link_cycle_to_face(next1, new_face);
-      return new_face.halfedge = next1;
+      this.link_cycle_to_face(new_he1, new_face);
+      new_face.halfedge = new_he1;
+      old_face.halfedge = new_he2;
     };
 
-    TopologyLinker.link_cycle_to_face = function(halfedge, face_target) {
+    TopologyLinker.prototype.link_cycle_to_face = function(halfedge, face_target) {
       var current, start;
       start = halfedge;
       current = start;
       while (true) {
         current.face = face_target;
+        current = current.next;
         if (current === start) {
           break;
         }
       }
     };
 
-    TopologyLinker.unlink_edge = function(edge, new_face, params) {
+    TopologyLinker.prototype.link_vert_to_external_face = function(vert, external_halfedge) {
+      var edge, external_face, he1, he2, prev_external;
+      he1 = this.generator.newHalfedge();
+      he2 = this.generator.newHalfedge();
+      edge = this.generator.newEdge();
+      vert.halfedge = he1;
+      he1.vertex = vert;
+      he2.vertex = external_halfedge.vertex;
+      he1.twin = he2;
+      he2.twin = he1;
+      he1.edge = edge;
+      he2.edge = edge;
+      edge.halfedge = he1;
+      prev_external = external_halfedge.prev;
+      he1.next = external_halfedge;
+      he1.prev = he2;
+      he2.prev = prev_external;
+      he2.next = he1;
+      prev_external.next = he2;
+      external_halfedge.prev = he1;
+      external_face = external_halfedge.face;
+      he1.face = external_face;
+      he2.face = external_face;
+    };
+
+    TopologyLinker.prototype.unlink_edge = function(edge, params) {
       var degree1, degree2, face, face1, face2, halfedge1, halfedge2, merge_faces, next, prev, split_faces, vert1, vert2;
+      if (edge === null) {
+        debugger;
+      }
       halfedge1 = edge.halfedge;
       halfedge2 = halfedge1.twin;
       vert1 = halfedge1.vertex;
@@ -2269,7 +2637,7 @@ Terminology:
       merge_faces = face1 !== face2;
       face = null;
       if (merge_faces) {
-        face = this._merge_faces(face1, face2, face_new);
+        face = this._merge_faces(face1, face2);
       } else {
         face = face1;
       }
@@ -2277,14 +2645,14 @@ Terminology:
         if (params.erase_lonely_vertices) {
           vert1.destroy();
         } else {
-          vert1.make_lonely();
+          this.link_island_vertex(vert1);
         }
       }
       if (degree2 === 1) {
         if (params.erase_lonely_vertices) {
           vert2.destroy();
         } else {
-          vert2.make_lonely();
+          this.link_island_vertex(vert2);
         }
       }
       if (degree1 === 1 && degree2 === 1) {
@@ -2312,9 +2680,7 @@ Terminology:
       }
       split_faces = !merge_faces && degree1 > 1 && degree2 > 1;
       if (split_faces) {
-        this._split_face_by_removing_edge(edge, face_new);
-      } else {
-        face_new.destroy();
+        this._split_face_by_removing_edge(edge);
       }
       if (!split_faces && !merge_faces) {
         face.data.marked = true;
@@ -2324,7 +2690,7 @@ Terminology:
       edge.destroy();
     };
 
-    TopologyLinker._merge_faces = function(face1, face2) {
+    TopologyLinker.prototype._merge_faces = function(face1, face2) {
       var current, h0, halfedge1, halfedge2, new_face;
       halfedge1 = face1.halfedge;
       halfedge2 = face2.halfedge;
@@ -2355,11 +2721,12 @@ Terminology:
       return face1;
     };
 
-    TopologyLinker._split_face_by_removing_edge = function(edge, face_new) {
-      var current, face_new1, face_new2, face_old, halfedge1, halfedge2, next1, next2, start;
+    TopologyLinker.prototype._split_face_by_removing_edge = function(edge) {
+      var current, face_new, face_new1, face_new2, face_old, halfedge1, halfedge2, next1, next2, start;
       halfedge1 = edge.halfedge;
       halfedge2 = halfedge1.twin;
       face_old = halfedge1.next.face;
+      face_new = this.generator.newFace();
       face_new1 = face_new;
       face_new2 = face_old;
       next1 = halfedge1.next;
@@ -2385,6 +2752,105 @@ Terminology:
         }
       }
       return [face_new1, face_new2];
+    };
+
+    TopologyLinker.prototype.link_vert_line_continent = function(verts) {
+      var back0, back1, back2, backwards_edges, complemented_face, edge, edges, first_index, forward_edges, halfedge1, halfedge2, he0, he1, he2, i, j, k, last_halfedge, last_index, ref, ref1, ref2, ref3;
+      if (verts.length < 1) {
+        return;
+      }
+      if (verts.length === 1) {
+        this.link_island_vertex(verts[0]);
+        return;
+      }
+      edges = [];
+      forward_edges = [];
+      backwards_edges = [];
+      complemented_face = this.generator.newFace();
+      first_index = 0;
+      last_index = verts.length - 2;
+      for (i = j = ref = first_index, ref1 = last_index; j <= ref1; i = j += 1) {
+        edge = this.generator.newEdge();
+        halfedge1 = this.generator.newHalfedge();
+        halfedge2 = this.generator.newHalfedge();
+        edge.halfedge = halfedge1;
+        halfedge1.edge = edge;
+        halfedge2.edge = edge;
+        halfedge1.twin = halfedge2;
+        halfedge2.twin = halfedge1;
+        halfedge1.vertex = verts[i];
+        halfedge2.vertex = verts[i + 1];
+        halfedge1.face = complemented_face;
+        halfedge2.face = complemented_face;
+        verts[i].halfedge = halfedge1;
+        edges.push(edge);
+        forward_edges.push(halfedge1);
+        backwards_edges.push(halfedge2);
+      }
+      last_halfedge = backwards_edges[last_index];
+      verts[verts.length - 1].halfedge = last_halfedge;
+      complemented_face.halfedge = last_halfedge;
+      for (i = k = ref2 = first_index + 1, ref3 = last_index - 1; k <= ref3; i = k += 1) {
+        he0 = forward_edges[i - 1];
+        he1 = forward_edges[i];
+        he2 = forward_edges[i + 1];
+        back0 = backwards_edges[i + 1];
+        back1 = backwards_edges[i];
+        back2 = backwards_edges[i - 1];
+        he1.prev = he0;
+        he1.next = he2;
+        back1.prev = back0;
+        back1.next = back2;
+      }
+      forward_edges[first_index].prev = backwards_edges[first_index];
+      backwards_edges[first_index].next = forward_edges[first_index];
+      forward_edges[last_index].next = backwards_edges[last_index];
+      backwards_edges[last_index].prev = forward_edges[last_index];
+      if (first_index < last_index) {
+        forward_edges[first_index].next = forward_edges[first_index + 1];
+        backwards_edges[first_index].prev = backwards_edges[first_index + 1];
+        forward_edges[last_index].prev = forward_edges[last_index - 1];
+        backwards_edges[last_index].next = backwards_edges[last_index - 1];
+      }
+    };
+
+    TopologyLinker.prototype.split_edge_with_vert = function(edge, vert) {
+      var backwards1, backwards2, edge2, forwards1, forwards2;
+      forwards1 = edge.halfedge;
+      backwards1 = forwards1.twin;
+      forwards2 = this.generator.newHalfedge();
+      backwards2 = this.generator.newHalfedge();
+      forwards2.vertex = vert;
+      backwards2.vertex = vert;
+      vert.halfedge = forwards2;
+      edge2 = this.generator.newEdge();
+      edge.halfedge = forwards1;
+      edge2.halfedge = forwards2;
+      forwards1.edge = edge;
+      forwards2.edge = edge2;
+      backwards1.edge = edge2;
+      backwards2.edge = edge;
+      forwards1.twin = backwards2;
+      backwards2.twin = forwards1;
+      forwards2.twin = backwards1;
+      backwards1.twin = forwards2;
+      forwards2.prev = forwards1;
+      forwards2.next = forwards1.next;
+      forwards2.next.prev = forwards2;
+      forwards1.next = forwards2;
+      backwards2.prev = backwards1;
+      backwards2.next = backwards1.next;
+      backwards2.next.prev = backwards2;
+      backwards1.next = backwards2;
+      forwards2.face = forwards1.face;
+      backwards2.face = backwards1.face;
+
+      /*
+      if forwards1.prev == backwards1
+          forwards1.prev = backwards2
+      if backwards1.prev == forwards1
+          backwards1.prev = forwards2
+       */
     };
 
     return TopologyLinker;

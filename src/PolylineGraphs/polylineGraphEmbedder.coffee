@@ -128,49 +128,15 @@ class SCRIB.PolylineGraphEmbedder
 
         # 1 point Graph.
 
-        ###
-        We construct one of each element for the singleton graph.
-        NOTE: This allocation is a wrapper on top of the Graph allocation function, which allocates its Vertex_Data object.
-        the other functions this->new[ ____ ] work in the same way.
-        ###
-        vertex      = @_newVertex()
+        # We use a linked that generates PolylineGraphData Associated Halfedge elements.              
+        linker = new SCRIB.TopologyLinker(SCRIB.PolylineGraphEmbedder, graph)
+
+        # Link up a singleton graph.
+        vertex = linker.link_island_vertex()
+
+        # Located the singleton graph at the specified point in space.
         vertex_data = vertex.data
-        edge        = @_newEdge()
-
-        interior = @_newFace()
-        exterior = @_newFace()
-        interior_data = interior.data
-        exterior_data = exterior.data
-
-        halfedge = @_newHalfedge()
-        twin     = @_newHalfedge() # Somewhat fake, since singleton graphs are degenerate.
-
         vertex_data.point = polyline.getPoint(0)
-
-        vertex.halfedge = halfedge
-        edge.halfedge   = halfedge
-
-        # The interior is trivial and is defined by a trivial internal and external null area point boundary.
-        interior.halfedge = halfedge
-        interior_data.addHole(exterior)
-
-        exterior.halfedge = halfedge
-
-        # Self referential exterior loop.
-        halfedge.edge   = edge
-        halfedge.face   = exterior
-        halfedge.next   = halfedge
-        halfedge.prev   = halfedge
-        halfedge.twin   = twin
-        halfedge.vertex = vertex
-
-        # Self referential interior loop.
-        twin.edge   = edge
-        twin.face   = interior
-        twin.next   = twin
-        twin.prev   = twin
-        twin.twin   = halfedge
-        twin.vertex = vertex
 
         return graph
 
@@ -504,16 +470,12 @@ class SCRIB.PolylineGraphEmbedder
 
             # Singleton point.
             if degree == 0
-            
+                
+                # Link the Islant vertex using a topology linker.
+                linker = new SCRIB.TopologyLinker(SCRIB.PolylineGraphEmbedder, @_graph)
+                linker.link_island_vertex(vert)
                 vert_data.singleton_point = true
 
-                halfedge = vert.halfedge
-
-                # ASSERTION: halfedge != null. If construction the user inputs a graph with singleton points.
-                # FIXME: Perhaps I should allocate the half edge here for the trivial case. Maybe I should combine the
-                # places in my code where I define the singleton state.
-                halfedge.next = halfedge
-                halfedge.prev = halfedge
                 continue
             
 
@@ -675,3 +637,74 @@ class SCRIB.PolylineGraphEmbedder
         output = graph.newVertex()
         output.data  = new SCRIB.Vertex_Data(output)
         return output
+
+class SCRIB.PolylineGraphGenerator
+
+    constructor: (@_graph) ->
+
+    # These functions should be used in all of my processings of polyline graphs.
+    newGraph: () ->
+        return SCRIB.PolylineGraphEmbedder.newGraph()
+
+    newFace: (graph) ->
+        graph = @_graph if not graph
+        return SCRIB.PolylineGraphEmbedder.newFace(graph)
+
+    newEdge: (graph) ->
+        graph = @_graph if not graph
+        return SCRIB.PolylineGraphEmbedder.newEdge(graph)
+
+    newHalfedge: (graph) ->
+        graph = @_graph if not graph
+        return SCRIB.PolylineGraphEmbedder.newHalfedge(graph)
+
+    newVertex: (graph) ->
+        graph = @_graph if not graph
+        return SCRIB.PolylineGraphEmbedder.newVertex(graph)
+
+    # According to the ray vert1 --> vert2,
+    # returns which side vert3 is on.
+    # This is necessary for planar topological updates, such as splitting faces.
+    # This is a useful geometric condition that has ties to orientation.
+    line_side_test: (vert1, vert2, vert3) ->
+        
+        pt_c = vert3.data.point
+        ray = @_ray(vert1, vert2)
+
+        return ray.line_side_test(pt_c)
+
+    # Returns true if vert_pt is inside of the angle ABC, where a, b, c are vertices.
+    # This will be used for linking edges to the correct angle.
+    # pt is inside if it is counterclockwise to BA and clockwise to BC.
+    vert_in_angle: (vert_a, vert_b, vert_c, vert_pt) ->
+
+        # Due to the orientation of a Computer Graphics plane,
+        # we have swapped vert a and vert c.
+        ray1 = @_ray(vert_b, vert_c)
+        ray2 = @_ray(vert_b, vert_a)
+
+        ray_pt = @_ray(vert_b, vert_pt)
+ 
+        angle1 = ray1.getAngle()
+        angle2 = ray2.getAngle()
+        angle_pt = ray_pt.getAngle()
+
+        # Apply mod Math.PI*2 wrapping functions to ensure the integrity of the check.
+        # Make sure angle2 is an upper bound.
+        if angle2 <= angle1 # NOTE: Equality enables correct tail angles that encompass the entire 360 degrees.
+            angle2 += Math.PI*2
+
+        if angle_pt < angle1
+            angle_pt += Math.PI*2
+
+        # Return if in bounds.
+        return angle1 <= angle_pt and angle_pt <= angle2
+
+    _ray: (v1, v2) ->
+        a = v1.data.point
+        b = v2.data.point
+
+        dir = b.sub(a)
+
+        ray = new BDS.Ray(a, dir, 1)
+        return ray
