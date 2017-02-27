@@ -1,5 +1,5 @@
 /*! Scribble JS, a project by Bryce Summers.
- *  Single File concatenated by Grunt Concatenate on 21-02-2017
+ *  Single File concatenated by Grunt Concatenate on 27-02-2017
  */
 /*
  * Defines namespaces.
@@ -144,10 +144,36 @@ SCRIB = {};
       this.marked = false;
       this.next_extraordinary = null;
       this.info = null;
+
+      /*
+      @_curve
+      @_time1
+      @_time2
+       */
     }
 
     Halfedge_Data.prototype.isExtraordinary = function() {
       return this.halfedge.vertex.data.isExtraordinary();
+    };
+
+    Halfedge_Data.prototype.setAssociatedCurve = function(obj) {
+      this._curve = obj;
+    };
+
+    Halfedge_Data.prototype.getAssociatedCurve = function() {
+      return this._curve;
+    };
+
+    Halfedge_Data.prototype.setTimes = function(time1, time2) {
+      this._time1 = time1;
+      return this._time2 = time2;
+    };
+
+    Halfedge_Data.prototype.getTimes = function() {
+      if (this._time1 === void 0) {
+        return void 0;
+      }
+      return [this._time1, this._time2];
     };
 
     return Halfedge_Data;
@@ -183,10 +209,12 @@ SCRIB = {};
 * - A polygon is closed if it has identical starting and ending points and open otherwise.
 *   The algorithm may be configured to output either open or closed polygons based on the closed_loop mode state.
 *
-* FIXME: If a user draws a second line completely around an original line, then their will be faces defined by both an external
+* FIXME: If a user draws a second line completely around an original line, then there will be faces defined by both an external
 *        face on the original polyline embedding and an internal face on the new enclosing embedding.
 *        This may invalidate some users' assumptions of a global planar graph embedding without any holes.
 *
+*
+* FIXME: This has been moved to the polylineGraphPostProcessor class.
 * Post Processing:
 * 1. Determine internal and external faces. (Initial Release)
 * 2. Determine trivial and non trivial area faces according to a constant area threshold value. (8/11/2016)
@@ -309,7 +337,7 @@ SCRIB = {};
      */
 
     PolylineGraphEmbedder.prototype._loadPolyline = function(polyline) {
-      var i, input_point, j, k, len, offset, ref, ref1;
+      var ass_data, curve, i, i_line, input_point, j, k, len, offset, ref, ref1, times;
       len = polyline.size();
       offset = this._points.length;
       for (i = j = 0, ref = len; j < ref; i = j += 1) {
@@ -322,8 +350,19 @@ SCRIB = {};
         }
         this._points.push(input_point);
       }
+      curve = polyline.getAssociatedData();
+      times = polyline.getTimes();
+      ass_data = false;
+      if (curve && times) {
+        ass_data = true;
+      }
       for (i = k = 0, ref1 = len - 1; k < ref1; i = k += 1) {
-        this._lines_initial.push(new BDS.Line(i + offset, i + offset + 1, this._points));
+        i_line = new BDS.Line(i + offset, i + offset + 1, this._points);
+        if (ass_data) {
+          i_line.setAssociatedCurve(curve);
+          i_line.setTimes(times[i], times[i + 1]);
+        }
+        this._lines_initial.push(i_line);
       }
 
       /*
@@ -332,7 +371,12 @@ SCRIB = {};
       In other words put a duplicate copy of the initial point.
        */
       if (polyline.isClosed()) {
-        this._lines_initial.push(new BDS.Line(len - 1 + offset, 0 + offset, this._points));
+        i_line = new BDS.Line(len - 1 + offset, 0 + offset, this._points);
+        if (ass_data) {
+          i_line.setAssociatedCurve(curve);
+          i_line.setTimes(times[len - 1], 0);
+        }
+        this._lines_initial.push(i_line);
       }
     };
 
@@ -385,7 +429,7 @@ SCRIB = {};
      */
 
     PolylineGraphEmbedder.prototype._allocate_graph_from_input = function() {
-      var e, edge, edge_ID, halfedge, halfedge_ID, i, j, k, l, last_backwards_halfedge, last_forwards_halfedge, last_index, len, len1, len2, line, point, ref, ref1, ref2, twin, twin_ID, vert, vert_data, vert_twin, vert_twin_data, vertex_ID, vertex_twin_ID;
+      var curve, e, edge, edge_ID, halfedge, halfedge_ID, i, j, k, l, last_backwards_halfedge, last_forwards_halfedge, last_index, len, len1, len2, line, point, ref, ref1, ref2, ref3, time1, time2, twin, twin_ID, vert, vert_data, vert_twin, vert_twin_data, vertex_ID, vertex_twin_ID;
       this._graph = this._newGraph();
       ref = this._points;
       for (j = 0, len1 = ref.length; j < len1; j++) {
@@ -433,6 +477,14 @@ SCRIB = {};
         twin.twin = halfedge;
         halfedge.vertex = vert;
         twin.vertex = vert_twin;
+        if (line.hasAssociatedCurve()) {
+          curve = line.getAssociatedCurve();
+          halfedge.data.setAssociatedCurve(curve);
+          ref3 = line.getTimes(), time1 = ref3[0], time2 = ref3[1];
+          halfedge.data.setTimes(time1, time2);
+          twin.data.setAssociatedCurve(curve);
+          twin.data.setTimes(time2, time1);
+        }
         if (vert.halfedge === null) {
           vert.halfedge = halfedge;
         }
@@ -911,6 +963,50 @@ Untested Features:
       }
       this._halfedge_bvh = new BDS.BVH2D(segments);
       return this._halfedge_bvh;
+    };
+
+    Face_Info.prototype.toCurves = function() {
+      var current, curve, next_curve, output, ref, ref1, start, t1, t2, time1, time2, vert;
+      start = this.face.halfedge;
+      current = start;
+      while (true) {
+        vert = current.vertex;
+        if (vert.degree() !== 2) {
+          break;
+        }
+        current = current.next;
+        if (current === start) {
+          break;
+        }
+      }
+
+      /*
+      if current == start after looping, then this is a singleton cycle topology.
+       */
+      output = [];
+      start = current;
+      while (true) {
+        ref = current.data.getTimes(), t1 = ref[0], t2 = ref[1];
+        time1 = t1;
+        curve = current.data.getAssociatedCurve();
+        while (true) {
+          current = current.next;
+          next_curve = current.data.getAssociatedCurve();
+          if (next_curve !== curve) {
+            break;
+          }
+          if (current === start) {
+            break;
+          }
+        }
+        ref1 = current.prev.data.getTimes(), t1 = ref1[0], t2 = ref1[1];
+        time2 = t2;
+        output.push(curve.subCurve(time1, time2));
+        if (current === start) {
+          break;
+        }
+      }
+      return output;
     };
 
 

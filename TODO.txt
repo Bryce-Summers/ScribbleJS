@@ -32,3 +32,7 @@ Spruce up the examples:
  - For the eraser tool, sort the faces by area, to make sure internal islands get drawn on top of containing faces.
 
  - In the line embedding, I need to check for self-intersections.
+
+ -  I need to make line segment intersection work for algorithms that want a unique listing of intersection points across diverse arrays, and people looking for a single line full splitting.
+"# FIXME: This line needs to be ommited for some examples and given for others.
+ other.split_points_indices.push(index)"

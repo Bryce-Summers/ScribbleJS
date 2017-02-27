@@ -112,8 +112,30 @@ class SCRIB.Halfedge_Data
         # A Pointer to a SCRIB.Face_Info object.
         @info = null
 
+        ###
+        @_curve
+        @_time1
+        @_time2
+        ###
+
     # A Halfedge will be labeled as extraordinary iff its vertex is an intersection point or a tail_point.
     isExtraordinary: () ->
 
         return @halfedge.vertex.data.isExtraordinary()
 
+    # Halfedges may represent subsections of curves.
+    setAssociatedCurve: (obj) ->
+        @_curve = obj
+        return
+
+    getAssociatedCurve: () ->
+        return @_curve
+
+    # Associate parameter values with the beginning and end of this halfedge.
+    setTimes: (time1, time2) ->
+        @_time1 = time1
+        @_time2 = time2
+
+    getTimes: () ->
+        return undefined if @_time1 is undefined
+        return [@_time1, @_time2]

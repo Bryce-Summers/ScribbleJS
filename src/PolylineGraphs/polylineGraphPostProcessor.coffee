@@ -179,6 +179,69 @@ class SCRIB.Face_Info
 
         return @_halfedge_bvh
 
+    # Computes a list of Bezier curves associated with this face.
+    toCurves: () ->
+
+        # First we want to search for a vertex of degree != 2.
+        # because that will be a natural start to a curve.
+        start   = @face.halfedge
+        current = start
+
+        loop # DO
+                     
+            vert = current.vertex
+
+            if vert.degree() != 2
+                break 
+
+            # Iterate.
+            current = current.next
+
+            # while
+            break unless current != start
+
+        ###
+        if current == start after looping, then this is a singleton cycle topology.
+        ###
+
+        output = []
+        # Start of the curve extraction.
+        start = current
+
+        # Peel off all of the curves.
+        loop
+
+            # Beginning of curve.
+            [t1, t2] = current.data.getTimes()
+            time1 = t1 # The starting time for this length.
+            curve = current.data.getAssociatedCurve()
+
+            # Search for the halfedge past the end of this curve.
+            # If may be the starting halfedge...
+            loop            
+
+                current = current.next
+
+                next_curve = current.data.getAssociatedCurve()
+                
+                # Stop if we've come to the start of a new curve.
+                break if next_curve != curve
+                
+                # Stop if we have come back to the oriented beginning.
+                break unless current != start
+
+            # End of Curve.
+            [t1, t2] = current.prev.data.getTimes()
+            time2 = t2
+
+            # Push the sub curve.
+            output.push(curve.subCurve(time1, time2))
+
+            break unless current != start
+
+        return output
+
+
     ###
     Edge Intersection functions.
     Returns all edges within this face that are also within the given geometries.

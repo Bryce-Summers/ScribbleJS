@@ -22,10 +22,12 @@
 * - A polygon is closed if it has identical starting and ending points and open otherwise.
 *   The algorithm may be configured to output either open or closed polygons based on the closed_loop mode state.
 *
-* FIXME: If a user draws a second line completely around an original line, then their will be faces defined by both an external
+* FIXME: If a user draws a second line completely around an original line, then there will be faces defined by both an external
 *        face on the original polyline embedding and an internal face on the new enclosing embedding.
 *        This may invalidate some users' assumptions of a global planar graph embedding without any holes.
 *
+*
+* FIXME: This has been moved to the polylineGraphPostProcessor class.
 * Post Processing:
 * 1. Determine internal and external faces. (Initial Release)
 * 2. Determine trivial and non trivial area faces according to a constant area threshold value. (8/11/2016)
@@ -193,7 +195,7 @@ class SCRIB.PolylineGraphEmbedder
 
         for i in [0...len] by 1
         
-            # FIXME: I might no any of these vertical line prevention techniques.
+            # FIXME: I might no longer need any of these vertical line prevention techniques.
             input_point = polyline.getPoint(i)#.add(new BDS.Point(Math.random(), Math.random()))
 
             # A Paranoid vertical line prevention technique.
@@ -205,11 +207,25 @@ class SCRIB.PolylineGraphEmbedder
                 debugger
             @_points.push(input_point)
             
+        # Retrieve higher level curve association data.
+        curve = polyline.getAssociatedData()
+        times = polyline.getTimes()
+        ass_data = false
+        if curve and times
+            ass_data = true
+
 
         # Populate the original lines.
         for i in [0...len - 1] by 1
         
-            @_lines_initial.push(new BDS.Line(i + offset, i + offset + 1, @_points))
+            i_line = new BDS.Line(i + offset, i + offset + 1, @_points)
+
+            # Data that will be used for things like Bezier Curve chopping.
+            if ass_data
+                i_line.setAssociatedCurve(curve)
+                i_line.setTimes(times[i], times[i + 1])
+
+            @_lines_initial.push(i_line)
         
 
         ###
@@ -220,7 +236,13 @@ class SCRIB.PolylineGraphEmbedder
         if polyline.isClosed()
 
             # connects last point at index (len - 1 + offset) to the first point, located at index (0 + offset).
-            @_lines_initial.push(new BDS.Line(len - 1 + offset, 0 + offset, @_points))
+            i_line = new BDS.Line(len - 1 + offset, 0 + offset, @_points)
+
+            if ass_data
+                i_line.setAssociatedCurve(curve)
+                i_line.setTimes(times[len - 1], 0)
+
+            @_lines_initial.push(i_line)
 
         return
 
@@ -261,6 +283,8 @@ class SCRIB.PolylineGraphEmbedder
         for i in [0...numLines] by 1
 
             line = @_lines_initial[i]
+            # Splits lines and associates and interpolates attributes,
+            # if they have been set in the initial lines.
             line.getSplitLines(@_lines_split)
 
         return
@@ -340,6 +364,19 @@ class SCRIB.PolylineGraphEmbedder
 
             halfedge.vertex = vert
             twin.vertex     = vert_twin
+
+            # Copy over associated data to the two curves.
+            if line.hasAssociatedCurve()
+
+                # Forwards subcurve.
+                curve = line.getAssociatedCurve()
+                halfedge.data.setAssociatedCurve(curve)
+                [time1, time2] = line.getTimes()
+                halfedge.data.setTimes(time1, time2)
+
+                # backwards subcurve.
+                twin.data.setAssociatedCurve(curve)
+                twin.data.setTimes(time2, time1) # Reversed times.
 
             # Here we gurantee that Halfedge h->vertex->halfedge = h iff
             # the halfedge is the earliest halfedge originating from the vertex in the order.
