@@ -1,5 +1,5 @@
 /*! Scribble JS, a project by Bryce Summers.
- *  Single File concatenated by Grunt Concatenate on 27-02-2017
+ *  Single File concatenated by Grunt Concatenate on 28-02-2017
  */
 /*
  * Defines namespaces.
@@ -992,7 +992,7 @@ Untested Features:
         while (true) {
           current = current.next;
           next_curve = current.data.getAssociatedCurve();
-          if (next_curve !== curve) {
+          if (current.vertex.degree() !== 2) {
             break;
           }
           if (current === start) {

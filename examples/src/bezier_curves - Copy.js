@@ -53,11 +53,8 @@ function createBezierCurves()
     // Tangent direction at pt1.
     tan1 = new BDS.Point(500, 100);
 
-    curve1 = new BDS.Hermite_Curve(p0, tan0, p1, tan1);
+    curve1 = new BDS.Bezier_Curve(p0, tan0, p1, tan1);
 
-    // Note: This curve is an equivalent curve constructed from Bezier control points,
-    // Like those used in Canvas drawing.
-    curve1 = BDS.Hermite_Curve.newFromBezier(p0, p0.add(tan0.divScalar(3)), p1.sub(tan1.divScalar(3)), p1);
 
     // --
 
@@ -65,7 +62,7 @@ function createBezierCurves()
     p1 = new BDS.Point(0, 500)
     tan0 = new BDS.Point(-500, 0)
     tan1 = new BDS.Point(-500, 0)
-    curve2 = new BDS.Hermite_Curve(p0, tan0, p1, tan1);
+    curve2 = new BDS.Bezier_Curve(p0, tan0, p1, tan1);
 
     // --
 
@@ -73,7 +70,7 @@ function createBezierCurves()
     p1 = new BDS.Point(500, 400)
     tan0 = new BDS.Point(0, 500)
     tan1 = new BDS.Point(0, 500)
-    curve3 = new BDS.Hermite_Curve(p0, tan0, p1, tan1);
+    curve3 = new BDS.Bezier_Curve(p0, tan0, p1, tan1);
 
     // Discretize the curve with a maximum resolution of 10 pixel units.
     times1 = []

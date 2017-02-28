@@ -36,3 +36,6 @@ Spruce up the examples:
  -  I need to make line segment intersection work for algorithms that want a unique listing of intersection points across diverse arrays, and people looking for a single line full splitting.
 "# FIXME: This line needs to be ommited for some examples and given for others.
  other.split_points_indices.push(index)"
+
+ # It appears that there are some degenerate intersection problems in the Bezier curve example, when the 100 is ommitted.
+ # It will be fruitful to address intersections at some point.

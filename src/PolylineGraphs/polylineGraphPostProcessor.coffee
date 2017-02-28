@@ -210,7 +210,7 @@ class SCRIB.Face_Info
 
         # Peel off all of the curves.
         loop
-
+            
             # Beginning of curve.
             [t1, t2] = current.data.getTimes()
             time1 = t1 # The starting time for this length.
@@ -224,8 +224,12 @@ class SCRIB.Face_Info
 
                 next_curve = current.data.getAssociatedCurve()
                 
+                # Stop if we have come to a critical vertex, where the path ends diverges, or intersects.
+                break if current.vertex.degree() != 2
+
                 # Stop if we've come to the start of a new curve.
-                break if next_curve != curve
+                # This is actually not very useful, because it breaks with tail paths, and self-intersecting curves.
+                #break if next_curve != curve
                 
                 # Stop if we have come back to the oriented beginning.
                 break unless current != start

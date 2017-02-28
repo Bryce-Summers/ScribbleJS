@@ -234,6 +234,63 @@ Canvas_Drawer.prototype =
   
     },
 
+    // Draws a BDS.Bezier_Curve onto the canvas.
+    drawBezier(curve)
+    {
+
+        [c0, c1, c2, c3] = curve.toBezierControlPoints();
+
+        var ctx = this.ctx;
+        ctx.beginPath();
+        ctx.moveTo(c0.x, c0.y);
+        ctx.bezierCurveTo(c1.x, c1.y, c2.x, c2.y, c3.x, c3.y);
+        ctx.stroke();
+    },
+
+    drawBezierLoop(curves, drawStroke, drawFill)
+    {
+        if(drawFill === undefined)
+        {
+            drawFill = true;
+        }
+
+        if(drawStroke === undefined)
+        {
+            drawStroke = true;
+        }
+
+        var ctx = this.ctx;
+        ctx.beginPath();
+        var p0 = curves[0].position(0); // Initial position is equivalent to the initial Bezier Control Point.
+        ctx.moveTo(p0.x, p0.y);
+
+        var len = curves.length;
+        for(var i = 0; i < len; i++)
+        {
+            curve = curves[i];
+
+            [c0, c1, c2, c3] = curve.toBezierControlPoints();
+
+            ctx.bezierCurveTo(c1.x, c1.y, c2.x, c2.y, c3.x, c3.y);
+
+            // Note: c3 is the first control point for the following curve.
+            // The curve will definatly exhibit G0 continuity.
+        }
+
+        // Close the path at the end.
+        ctx.closePath();
+
+        if(drawStroke)
+        {
+           ctx.stroke();
+        }
+
+        if(drawFill)
+        {
+            ctx.fill();
+        }
+    },
+
     // Takes a BDS.Circle and draws it to the screen.
     drawCircle(circle)
     {
