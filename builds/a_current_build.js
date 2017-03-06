@@ -1,5 +1,5 @@
 /*! Scribble JS, a project by Bryce Summers.
- *  Single File concatenated by Grunt Concatenate on 28-02-2017
+ *  Single File concatenated by Grunt Concatenate on 05-03-2017
  */
 /*
  * Defines namespaces.

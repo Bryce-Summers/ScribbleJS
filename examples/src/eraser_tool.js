@@ -109,16 +109,51 @@ function setup()
     // Embed the polylines within a graph.
     var embedder = new SCRIB.PolylineGraphEmbedder();
     //var graph    = embedder.embedPolyline(line);
-    var graph    = embedder.embedPolylineArray(lines);
+    EX.graph    = embedder.embedPolylineArray(lines);
 
     // Now Use a Post Processor to derive easy to work with structures which may be drawn to the screen.
     EX.postProcessor = new SCRIB.PolylineGraphPostProcessor();
 
-    EX.postProcessor.load_graph(graph);
+    EX.postProcessor.load_graph(EX.graph);
 
     // Immediately write out the graph to face info structures.
     EX.faces = EX.postProcessor.generate_faces_info();
     EX.postProcessor.generateBVH();
+
+    colorGraph(EX.faces);
+}
+
+function colorGraph(face_infos)
+{
+    return
+    var graph = EX.graph;
+
+    var faceGraph = new SCRIB.FaceGraph(graph);
+    var coloring = faceGraph.autoColor();
+
+    colors = [0xbae3ff,
+              0xffbae3,
+              0xe3ffba,
+              0xffd6ba,
+              0xbac1ff,
+              0xbafff9]
+
+    for (var i = 0; i < face_infos.length; i++)
+    {
+        var face_info = face_infos[i];
+
+        var color_id = parseInt(coloring[face_info.id]);
+
+        // Assign colors based on coloring.
+        if(color_id >= colors.length)
+        {
+            face_info.color = EX.G.newColor(100, 100, 100);
+        }
+        else
+        {
+            face_info.color = colors[color_id];
+        }
+    }
 }
 
 // Draws an array of SCRIB.Face_Info structures to the screen,
@@ -290,6 +325,7 @@ Fill_Bucket_Controller.prototype =
             params = {erase_lonely_vertices: true}
             EX.postProcessor.eraseEdges(edge_infos, params);
             this.faces = EX.postProcessor.generate_faces_info();
+            colorGraph(this.faces);
         }
 
         return;
@@ -301,6 +337,8 @@ Fill_Bucket_Controller.prototype =
     {
         // Clear the screen for new drawing.
         EX.G.clearScreen();
+
+        this.sortFaces(this.faces);
 
         // Draw the faces to the screen.
         drawFaceInfoArray(EX.G, this.faces);
@@ -320,11 +358,34 @@ Fill_Bucket_Controller.prototype =
     window_resize(event)
     {
 
-    }
+    },
+
+    // Sorts faces from greatest to least area.
+    sortFaces(faces)
+    {
+        var array = [];
+        for(var i = 0; i < faces.length; i++)
+        {
+            var face = faces[i];
+            var polyline = face.polyline;
+            var area = polyline.computeArea();
+
+            associated_tuple = {key: face, value:-area};
+            array.push(associated_tuple);
+        }
+
+        // Sorts a list of objects with .value defined by .value in asending order.
+        BDS.Arrays.sortByValue(array);
+
+        this.faces = [];
+
+        for(var i = 0; i < array.length; i++)
+        {
+            this.faces.push(array[i].key);
+        }
+    },
 
 }
-
-
 
 // Run Example.
 main();
