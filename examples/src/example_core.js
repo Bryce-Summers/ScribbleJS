@@ -323,9 +323,14 @@ Canvas_Drawer.prototype =
 // Used for debugging.
 // Prints, counts, and unit tests the halfedge graph.
 // This should be called from the console.
-function printHalfedgeMesh()
+function printHalfedgeMesh(graph)
 {
-    var iter = EX.Graph.halfedgesBegin();
+    if(graph === undefined)
+    {
+        graph = EX.Graph;
+    }
+
+    var iter = graph.halfedgesBegin();
 
     while(iter.hasNext())
     {
@@ -343,14 +348,14 @@ function printHalfedgeMesh()
     }
 
     // -- Test edges.
-    var iter = EX.Graph.edgesBegin();
+    var iter = graph.edgesBegin();
     while(iter.hasNext())
     {
         edge = iter.next();
         ASSERT(edge.halfedge.edge == edge);
     }
 
-    var iter = EX.Graph.facesBegin();
+    var iter = graph.facesBegin();
     while(iter.hasNext())
     {
         face = iter.next();
@@ -358,12 +363,12 @@ function printHalfedgeMesh()
         ASSERT(face.halfedge.face == face);
     }
 
-    ASSERT(EX.Graph.numHalfedges() == EX.Graph.numEdges()*2);
+    ASSERT(graph.numHalfedges() == graph.numEdges()*2);
 
-    console.log("TotalHalfedges = " + EX.Graph.numHalfedges());
-    console.log("TotalEdges = " + EX.Graph.numEdges());
-    console.log("TotalFaces = "     + EX.Graph.numFaces());
-    console.log("TotalVerts = "     + EX.Graph.numVertices());
+    console.log("TotalHalfedges = " + graph.numHalfedges());
+    console.log("TotalEdges = " + graph.numEdges());
+    console.log("TotalFaces = "     + graph.numFaces());
+    console.log("TotalVerts = "     + graph.numVertices());
 
     return "All Tests have passed";
 }

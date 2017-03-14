@@ -265,13 +265,13 @@ class SCRIB.Vertex
         return count
 
     make_lonely: () ->
-        debugger
 
         # FIXME: I should use the Topology linker's link island functionality.
 
         @halfedge = null
 
     # Returns the outgoing halfedge from this vertex to the given vertex.
+    # Returns null if the given vertex is not found.
     get_outgoing_halfedge_to: (vert) ->
         start = @halfedge.twin
         current = start.next.twin
@@ -284,8 +284,7 @@ class SCRIB.Vertex
                 return current.twin
 
             if current == start
-                debugger;
-                throw Error("Vert not found!");
+                return null
 
             current = current.next.twin
 
@@ -328,3 +327,4 @@ class SCRIB.Halfedge
 
     destroy: () ->
         @_iterator.remove()
+
