@@ -28,16 +28,36 @@ function setup()
     var lines = [];
     EX.holes = [];
 
-    var filePath = "./point_curve_files/line_0.txt";
-    lines.push(loadPolylineFromFile(filePath));
+    var filePath;
 
-    filePath = "./point_curve_files/hole_0.txt";
-    EX.holes.push(loadPolylineFromFile(filePath));
+    // -- Load the outlines as normal scribble lines.
+    var filePaths = 
+        ["./point_curve_files/outline_B.txt",
+         "./point_curve_files/outline_R.txt",
+         "./point_curve_files/outline_Y.txt",
+         "./point_curve_files/outline_C.txt",
+         "./point_curve_files/outline_E.txt",
+        ];
 
-    filePath = "./point_curve_files/hole_1.txt";
-    EX.holes.push(loadPolylineFromFile(filePath));
+    for(let path of filePaths)
+    {
+        lines.push(loadPolylineFromFile(path));
+    }
 
-    //lines.push(EX.hole);
+    lines[4].reverse();
+
+    // -- Load the holes as hole paths.
+    var filePaths = 
+        ["./point_curve_files/hole_B_0.txt",
+         "./point_curve_files/hole_B_1.txt",
+         "./point_curve_files/hole_E.txt",
+         "./point_curve_files/hole_R.txt"
+        ];
+
+    for(let path of filePaths)
+    {
+        EX.holes.push(loadPolylineFromFile(path));
+    }
 
     /*
     var p0 = lines[0];
@@ -120,7 +140,7 @@ function loadPolylineFromFile(filePath)
 
     // Split the lines according to line breaks.
     text = text.split('\n');
-    console.log(text);
+    console.log(filePath);
 
     var points = []
     var len = text.length
