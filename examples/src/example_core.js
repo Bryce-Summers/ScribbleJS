@@ -205,7 +205,6 @@ Canvas_Drawer.prototype =
         }
 
         ctx = this.ctx;
-
         ctx.beginPath();
 
         var p0 = polyline.getPoint(0);
@@ -232,6 +231,48 @@ Canvas_Drawer.prototype =
             ctx.fill();
         }
   
+    },
+
+    drawPolygonsEvenOdd(polylines)
+    {
+        ctx = this.ctx;
+        ctx.beginPath();
+
+        var len = polylines.length;
+        for(var i = 0; i < len; i++)
+        {
+            var polyline = polylines[i];
+            this._drawSubPath(polyline);
+        }
+
+        ctx.fill('evenodd');
+    },
+
+    // Draw a path in a even-odd polygon fill.
+    _drawSubPath(polyline)
+    {
+        var len = polyline.size();
+
+        if(len < 2)
+        {
+            return;
+        }
+
+        ctx = this.ctx;
+
+        var p0 = polyline.getPoint(0);
+        ctx.moveTo(p0.x, p0.y);
+
+        for(var i = 1; i < len; i++)
+        {
+            var p = polyline.getPoint(i);
+            ctx.lineTo(p.x, p.y);
+        }
+
+        if(polyline.isClosed())
+        {
+            ctx.closePath();
+        }
     },
 
     // Draws a BDS.Bezier_Curve onto the canvas.

@@ -291,6 +291,21 @@ class SCRIB.Face_Info
 
         return output_list
 
+    # Adds a hole to this face info.zzz
+    addHole: (polyline) ->
+        @face.data.hole_polylines.push(polyline)
+
+    getHoles: () ->
+        holes = @face.data.hole_polylines
+        output = []
+        for pline in holes
+            output.push(pline.clone())
+
+        return output
+
+    # END OF SCRIB.Face_Info
+
+
 
 # This post processor allows the user to load a HalfedgeGraph object and then never touch the graph again.
 # This class performs all of the algorithms for the user and returns results in easy to use
@@ -1079,12 +1094,27 @@ class SCRIB.PolylineGraphPostProcessor
         @generateBVH()
         return
 
+    # Embeds a polyline representing a hole.
+    # ASSUMPTION: The polyline should be contained within only 1 face.
+    # FIXME: I would like to go back and expand this function to fully update the topology therin,
+    # such as doing CSG operations.
+    # BDS.Polyline -> void.
+    # Note: Updaes SCRIB.Face_Info and cooresponding SCRIB.Face_Data
+    embedHole: (polyline) ->
+        faces = @query_faces_at_pt(polyline.getFirstPoint())
+    
+        # Add polyline to the first uncomplemented face that appears.    
+        for face in faces
+            if face.complemented == false
+                face.addHole(polyline)
+                return
+
     ###
     # Graph wide Edge Queries.
     # Returns all elements in the graph within the given regions.
     # NOTE: If you already have faces found, it will be better to use the Face_Info query functions.
     # Note: Edge queries are implemented by first performing a face query
-    # and then perfomring edge queries on those face's edge bvh's in the Face_Info objects.
+    # and then performing edge queries on those face's edge bvh's in the Face_Info objects.
     ###
 
     # BDS.Circle, Halfedge_Info[] (Optional) -> SCRIB.Halfedge_Info[]
@@ -1151,13 +1181,43 @@ class SCRIB.PolylineGraphPostProcessor
         output = []
         for polyline in polylines_in_box
             if geom.detect_intersection_with_polyline(polyline)
-                output.push(polyline.getAssociatedData())
+
+                face_info = polyline.getAssociatedData()
+
+                holes = face_info.getHoles()
+
+                isects_hole = false
+                for hole in holes
+                    if geom.detect_intersection_with_polyline(hole)
+                        isects_hole = true
+                        break
+
+                # Output faces that are intersected, when there hole's are not intersected.
+                if not isects_hole
+                    output.push(face_info)
 
         return output
 
     query_faces_in_box: (box) ->
 
         return @polylinesToAssociatedData(@_face_bvh.query_box_all(box))
+
+    # BDS.Point -> SCRIB.Face_Info
+    query_faces_at_pt: (pt) ->
+        faces = @_face_bvh.query_point_all(pt)
+        return @polylinesToAssociatedData(faces)
+
+    # Returns the associated data element if present,
+    # returns null if none is found.
+    query_face_at_pt: (pt) ->
+        face_in_bvh = @_face_bvh.query_point(pt)
+
+        if face_in_bvh == null
+            return null
+
+        face_infos = @polylinesToAssociatedData([face_in_bvh])
+        return face_infos[0]
+        
 
     # SCRIB.HalfedgeInfo[] --> SCRIB.EdgeInfo[]
     halfedgesToEdges: (halfedge_infos) ->

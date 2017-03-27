@@ -219,7 +219,7 @@ class SCRIB.Face
     constructor: () ->
         # Representative from the interior loop of halfedges defining the boundary of the face.
         @halfedge = null
-        @data = new SCRIB.Face_Data()
+        @data = null
         @id = null
         @_iterator = null
 

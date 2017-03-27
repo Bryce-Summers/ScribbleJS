@@ -51,6 +51,8 @@ class SCRIB.Face_Data
         # Scrib.Face[] 
         hole_representatives = []
 
+        @hole_polylines = []
+
         # A Pointer to a SCRIB.Face_Info object.
         @info    = null
 
