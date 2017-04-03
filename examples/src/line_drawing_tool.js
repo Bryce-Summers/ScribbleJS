@@ -121,26 +121,6 @@ function drawPolyLine_Array(G, polylines)
     }
 }
 
-function Line_Draw_Controller()
-{
-    // The circle that follows the mouse.
-    this.radius = 5;
-    this.mouse_circle = new BDS.Circle(new BDS.Point(0, 0), this.radius, true);
-
-    this.mouse_pressed = false;
-
-    this.faces = EX.faces;
-    
-    // The list of constructed lines.
-    this.lines = [];
-
-    // The current line being constructed.
-    this.current_line = null;
-
-    this.lastPoint = null;
-    this.currentPoint = null;
-}
-
 function colorGraph(face_infos)
 {
     var graph = EX.Graph;
@@ -171,6 +151,26 @@ function colorGraph(face_infos)
             face_info.color = colors[color_id];
         }
     }
+}
+
+function Line_Draw_Controller()
+{
+    // The circle that follows the mouse.
+    this.radius = 5;
+    this.mouse_circle = new BDS.Circle(new BDS.Point(0, 0), this.radius, true);
+
+    this.mouse_pressed = false;
+
+    this.faces = EX.faces;
+    
+    // The list of constructed lines.
+    this.lines = [];
+
+    // The current line being constructed.
+    this.current_line = null;
+
+    this.lastPoint = null;
+    this.currentPoint = null;
 }
 
 Line_Draw_Controller.prototype =

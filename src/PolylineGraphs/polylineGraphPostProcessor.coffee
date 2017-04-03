@@ -1047,7 +1047,9 @@ class SCRIB.PolylineGraphPostProcessor
 
                     # Then extract the one meaningful intersection point.
                     intersection_list = line.report_intersections_with_polyline(line2)
-                    vert_point = intersection_list[0] # Only 1 intersection for segment, segment intersection.
+                    isect = intersection_list[0] # Only 1 intersection for segment, segment intersection.
+                    vert_point = isect.point
+                    vert_index = isect.index
 
                     i_vert = generator.newVertex()
                     i_vert.data.point = vert_point
@@ -1058,7 +1060,7 @@ class SCRIB.PolylineGraphPostProcessor
 
                     # Split the point, so that future intersections will have the appropriate start and end points.
 
-                    [old_line, new_line] = line.splitPolyline(vert_point, 0)
+                    [old_line, new_line] = line.splitPolyline(vert_point, vert_index)
                     split_lines[split_line_index] = old_line # We shrink the current line and continue to check for intersections.
                     old_end_vert = split_verts[split_line_index*2 + 1]
                     split_verts[split_line_index*2 + 1] = i_vert # Update the end vert to the intersection vert.
