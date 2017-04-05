@@ -170,6 +170,12 @@ function Fill_Bucket_Controller()
 
 Fill_Bucket_Controller.prototype =
 {
+
+    isActive()
+    {
+        return true;
+    },
+
     mouse_down(event)
     {
         

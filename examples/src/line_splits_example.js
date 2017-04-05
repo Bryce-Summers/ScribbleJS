@@ -19,6 +19,7 @@ function main()
     points = [p0, p1, p2, p3]
 
     var len = 10;
+    var w = window.innerWidth;
     for(var i = 0; i < len; i++)
     {
         var x = i*w/len;

@@ -175,6 +175,12 @@ function Line_Draw_Controller()
 
 Line_Draw_Controller.prototype =
 {
+
+    isActive()
+    {
+        return true;
+    },
+
     mouse_down(event)
     {
         // Only trigger once.

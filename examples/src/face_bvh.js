@@ -37,10 +37,11 @@ function main()
     // Draw these faces to the screen.
     drawFaceInfoArray(G, faces);
 
-    // Generate a BVH representing the faces.
-    BVH = postProcessor.generateBVH();
+    // Tell the Post Processor to create a BVH representing the faces.
+    postProcessor.generateBVH();
 
-    boxes = BVH.toPolylines();
+    // Retrieve some polylines representing the BVH.
+    boxes = postProcessor.getBVHBoxPolylines();
 
     drawPolyLine_Array(G, boxes);
 

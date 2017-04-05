@@ -57,49 +57,38 @@ function createBezierCurves()
 
     // Note: This curve is an equivalent curve constructed from Bezier control points,
     // Like those used in Canvas drawing.
+    // pts and tangents may be converted to bezier points (and vice versa...) as follows:
+    //   b0 = p0
+    //   b1 = p0 + tan0/3
+    //   b2 = p1 - tan1/3
+    //   b3 = p1
     curve1 = BDS.Hermite_Curve.newFromBezier(p0, p0.add(tan0.divScalar(3)), p1.sub(tan1.divScalar(3)), p1);
 
     // --
 
-    p0 = new BDS.Point(500, 0)
-    p1 = new BDS.Point(0, 500)
-    tan0 = new BDS.Point(-500, 0)
-    tan1 = new BDS.Point(-500, 0)
+    p0 = new BDS.Point(500, 0);
+    p1 = new BDS.Point(0, 500);
+    tan0 = new BDS.Point(-500, 0);
+    tan1 = new BDS.Point(-500, 0);
     curve2 = new BDS.Hermite_Curve(p0, tan0, p1, tan1);
 
     // --
 
-    p0 = new BDS.Point(0, 400)
-    p1 = new BDS.Point(500, 400)
-    tan0 = new BDS.Point(0, 500)
-    tan1 = new BDS.Point(0, 500)
+    p0 = new BDS.Point(0, 400);
+    p1 = new BDS.Point(500, 400);
+    tan0 = new BDS.Point(0, 500);
+    tan1 = new BDS.Point(0, 500);
     curve3 = new BDS.Hermite_Curve(p0, tan0, p1, tan1);
 
     // Discretize the curve with a maximum resolution of 10 pixel units.
-    times1 = []
-    times2 = []
-    times3 = []
+    times1 = [];
+    times2 = [];
+    times3 = [];
     resolution = 10 // 10 pixel max_length for discretized segments.
 
-    // Testing Curve Subsetting.
-    
-    /*
-    console.log(curve1);
-    t1 = .5
-    t2 = 1
-    curve2 = curve1.subCurve(.5, 1);
-    //curve3 = curve1.subCurve(.8, 1);
-    console.log("Should be =")
-    console.log(curve1.position(t2));
-    console.log(curve2.position(t2));
-    console.log(curve2);
-    window.c1 = curve1
-    window.c2 = curve2
-    */
-
-    curve1.name = "curve1"
-    curve2.name = "curve2"
-    curve3.name = "curve3"
+    curve1.name = "curve1";
+    curve2.name = "curve2";
+    curve3.name = "curve3";
 
     line1 = curve1.toPolyline(10, times1);
     line2 = curve2.toPolyline(10, times2);

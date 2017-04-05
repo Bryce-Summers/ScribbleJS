@@ -515,7 +515,7 @@ var INPUT; // The global Input Controller than handles time, mouse, keyboard, et
 function init_input(start_time)
 {
     // Initialize the root of the input specification tree.
-    INPUT = new Input_Controller();
+    INPUT = new BDS.Controller_Group();
 
     window.addEventListener( 'resize', onWindowResize, false);
 
@@ -535,6 +535,8 @@ function init_input(start_time)
     {
         beginTime();
     }
+
+    return INPUT;
 }
 
 // Events.
@@ -587,7 +589,8 @@ function onMouseUp( event )
 
 function translateEvent(event)
 {
-    var rect = canvas.getBoundingClientRect();  
+    var canvas = document.getElementById("theCanvas");
+    var rect   = canvas.getBoundingClientRect();
 
     event.x = event.x - rect.left;
     event.y = event.y - rect.top;
@@ -595,6 +598,7 @@ function translateEvent(event)
 
 function beginTime()
 {
+    // Set the canvas reference.
     TIMESTAMP = performance.now();
     INPUT.time_on = true;
     timestep();

@@ -29,3 +29,9 @@ a {
 }
 
 #oldie a { color:#da0 }
+
+/* Load images, but hide them from the viewer onscreen. */
+img
+{
+    visibility: hidden;
+}

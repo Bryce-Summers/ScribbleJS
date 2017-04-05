@@ -8,8 +8,9 @@
     </head>
     <body>
 
-        <h1>Editor Tool</h1>
-        <h2>Click and Drag your mouse to delete elements.</h2>
+        <h1 id='header'>Editor Demo</h1>
+        <h2 id='instructions'>Click tool buttons to use them.</h2>
+
         <canvas id="theCanvas" width="500" height="500"></canvas>
 
         <div id="container"></div>
@@ -18,7 +19,15 @@
         <script src="../modules/BDS.js/builds/a_current_build.js"></script>
 
         <script src="src/example_core.js"></script>
+    
+        <script src="src/tools/Controller_Draw.js"></script>
+        <script src="src/tools/Controller_Eraser.js"></script>
+        <script src="src/tools/Controller_NewLine.js"></script>
+
         <script src="src/editor.js"></script>
     
+        <img id="eraser_tool" width="64" height="64" src="images/eraser_tool.png" alt="Eraser Tool.">
+        <img id="line_tool" width="64" height="64" src="images/line_tool.png" alt="Eraser Tool.">
+
     </body>
 </html>

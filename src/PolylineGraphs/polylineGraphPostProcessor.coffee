@@ -532,6 +532,8 @@ class SCRIB.PolylineGraphPostProcessor
         @_face_vector = []
         @_face_bvh = null
 
+    getCurrentGraph: () -> @_graph
+
     # These seem a bit silly outside of C++, but maybe they will be useful to folks.
     free_face_vector: () ->
         @_face_vector = null
@@ -938,7 +940,11 @@ class SCRIB.PolylineGraphPostProcessor
         polylines = @facesToPolylines(@_face_vector, true)
         @_face_bvh = new BDS.BVH2D(polylines)
 
+        # We disallow users from touching this.
         return
+
+    getBVHBoxPolylines: () ->
+        return @_face_bvh.toPolylines();
 
     # Converts to a set of polylines.
     # For applications such as element querying, it may be best to leave out complemented_faces.
