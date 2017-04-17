@@ -67,8 +67,12 @@ function main()
     var b2 = new BDS.Box(new BDS.Point(64,   0),
                          new BDS.Point(128, 64));
 
+    var b3 = new BDS.Box(new BDS.Point(128,   0),
+                         new BDS.Point(192, 64));
+
     var p1 = b1.toPolyline();
     var p2 = b2.toPolyline();
+    var p3 = b3.toPolyline();
 
     var header       = document.getElementById("header");
     var instructions = document.getElementById("instructions");
@@ -95,13 +99,73 @@ function main()
         instructions.innerHTML = "Line Tool: Click and Drag your mouse to delete elements.";
     }
 
+    // http://stackoverflow.com/questions/2897619/using-html5-javascript-to-generate-and-save-a-file
+    function func_save()
+    {
+        controller_eraser.setActive(false);
+        controller_line_drawing.setActive(false);
+
+        var saver = new svg_saver();
+        saver.start_svg();
+
+        var bb = new BDS.Box(new BDS.Point(0,   0),
+                             new BDS.Point(500, 500));
+
+        saver.setBoundingBox(bb);
+
+        // Add a black background to the exported image.
+        var screen_pline = canvas_G.getScreenBoundsPolyline();
+        saver.addPath(screen_pline, 0x000000, 0xffffff);
+
+        // Now add all of the faces to the saver.
+        var faces = postProcessor.generate_faces_info();
+        var comp_faces = [];
+        for(var i = 0; i < faces.length; i++)
+        {
+            var face_info  = faces[i];
+            var pline      = face_info.polyline;
+            var stroke;
+            var fill;
+
+            if(face_info.isComplemented())
+            {
+                comp_faces.push({geom:pline, fill: null, stroke:0xffffff});
+                continue;
+
+                // White.
+                stroke = 0xffffff;
+                fill   = null; // None.
+            }
+            else
+            {
+                // Black.
+                stroke = 0x000000;
+                fill   = face_info.color;
+            }
+            saver.addPath(pline, fill, stroke);
+        }
+
+        // Now push the complemented Faces, so that ther are on top.
+        for(var i = 0; i < comp_faces.length; i++)
+        {
+            face = comp_faces[i];
+            saver.addPath(face.geom, face.fill, face.stroke);
+        }
+
+        // White polygon with black outline.
+        
+
+        saver.generate_svg("scribble");
+    }
+
     var img_eraser = document.getElementById("eraser_tool");
     var img_line   = document.getElementById("line_tool");
+    var img_save   = document.getElementById("save_tool");
 
     // We put the line drawing button first to encourage people to use it.
     controller_ui.createButton(p1, func_line_tool, img_line);
     controller_ui.createButton(p2, func_eraser_tool, img_eraser);
-
+    controller_ui.createButton(p3, func_save, img_save);
 
     // Layer 1: Clear the screen and draw the graph.
     root_input.add_universal_controller(controller_draw);
