@@ -113,8 +113,12 @@ svg_saver.prototype =
     {
         var endl = "\n";
         var header = "<svg xmlns=\"http://www.w3.org/2000/svg\"" + endl;
-        header += "width=\""  + 500 + "\""   + endl;
-        header += "height=\"" + 500 + "\"\n" + endl;
+
+        var width  = this.boundingBox.max.x - this.boundingBox.min.x;
+        var height = this.boundingBox.max.y - this.boundingBox.min.y;
+
+        header += "width=\""  + width  + "\""   + endl;
+        header += "height=\"" + height + "\"\n" + endl;
 
         // viewbox.
         var s = " ";// space.

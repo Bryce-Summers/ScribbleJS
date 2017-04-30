@@ -209,21 +209,32 @@ class SCRIB.TopologyLinker
     # This is useful for planar topological face splitting.
     find_cycle_containing_vert_segment: (v1, v2) ->
 
-        # First we make sure that their is a cycle that exists and contains both verts.
+        # First we make sure that there is a cycle that exists and contains both verts.
+        # [a is a halfedge originating from v1 and b is a halfedge originating from v2.]
         [a, b] = @find_cycle_containing_both_verts(v1, v2)
 
         # If there is no solution, then return nulls.
         if a == null
             return [null, null]
 
+        the_face = a.face
+
         # ASSUMPTION: v1 and v2 are on the same cycle and there is a
         # straight line between them that crosses no edges in the current planar embedding.
         # They must each uniquely have an edge insertion position,
         # which is on the same face on their respective star neighborhoods.
+        # we need to search for it, because the vertex may contain several of such faces.
         a = @find_halfedge_at_vert_containing_vert(v1, v2)
         b = @find_halfedge_at_vert_containing_vert(v2, v1)
 
-        if a.face != b.face
+        if a.face != the_face or a.face != b.face
+            debugger
+            ###
+            Try finding the face again in debug mode.
+            ###
+            console.log("Why was the face: " + the_face.id + " not found.")
+            a = @find_halfedge_at_vert_containing_vert(v1, v2)
+            b = @find_halfedge_at_vert_containing_vert(v2, v1)
             debugger
             throw new Error("This should not be possible.")
 

@@ -291,7 +291,7 @@ class SCRIB.Face_Info
 
         return output_list
 
-    # Adds a hole to this face info.zzz
+    # Adds a hole to this face info.
     addHole: (polyline) ->
         @face.data.hole_polylines.push(polyline)
 
@@ -981,7 +981,11 @@ class SCRIB.PolylineGraphPostProcessor
     embedAnotherPolyline: (polyline) ->
         
         # We need singleton polylines to compute 2D line segemnt intersections.
-        singletonPolylines = polyline.toPolylineSegments()
+        input_polylines_unsplit = polyline.toPolylineSegments()
+
+        # Just stop if the user is trying to embed a trivial point.
+        if input_polylines_unsplit.length < 1
+            return
 
         # We will need this guy for instantiating new elements inside of the linker.
         generator = new SCRIB.PolylineGraphGenerator(@_graph)
@@ -989,39 +993,40 @@ class SCRIB.PolylineGraphPostProcessor
         # We will use a linker to update the topology and embed the line.
         linker = new SCRIB.TopologyLinker(generator, @_graph)
 
-        # Instantiate a vert for every point in the input polyline.
-        verts = []
+        # One vertex for every point in the input polyline.
+        input_verts = []
         v0 = generator.newVertex()
-        v0.data.point = singletonPolylines[0].getPoint(0)
-        verts.push(v0)
+        v0.data.point = input_polylines_unsplit[0].getPoint(0)
+        input_verts.push(v0)
 
-        for line in singletonPolylines
+        for line in input_polylines_unsplit
             vert = generator.newVertex()
             vert.data.point = line.getPoint(1)
-            verts.push(vert)
+            input_verts.push(vert)
 
-        # Embedding nothing and points is easy, they just sit there.
-        if verts.length < 2
+        # Embedding nothing and singleton points is easy, they just sit there.
+        if input_verts.length < 2
             return
 
         # We will store an array of all of the lowest resolution list of split line segments.
         # We will gradually grow this as more are split.
-        split_lines = []
-        split_verts = [] # split_lines indices*2 + 0 or 1 line up with split_line_verts.
+        input_polylines_split_thus_far = []
+        split_verts = [] # input_polylines_split_thus_far indices*2 + 0 or 1 line up with split_line_verts.
+                         # vertices connected by these subdivided lines are then linked in a second pass.
 
         # For every one of the original segments in the input, we will do a local search for intersections,
         # and dice them up, while adding them to the split_lines array.
         # This pass splits up the input polyline segments and topologically splits the original graph as necessary.
-        for index in [0...singletonPolylines.length] by 1
+        for index in [0...input_polylines_unsplit.length] by 1
 
             # The start of the splits associated with this segment.
-            split_lines_start_index = split_lines.length
-            line = singletonPolylines[index]
-            split_lines.push(line)
+            split_lines_start_index = input_polylines_split_thus_far.length
+            line = input_polylines_unsplit[index]
+            input_polylines_split_thus_far.push(line)
 
             # This is a record of the start and ending verts for each split line.
-            split_verts.push(verts[index])
-            split_verts.push(verts[index + 1])
+            split_verts.push(input_verts[index])
+            split_verts.push(input_verts[index + 1])
 
             box = line.ensureBoundingBox()
 
@@ -1044,8 +1049,8 @@ class SCRIB.PolylineGraphPostProcessor
 
                 # Iterate over the current set of split lines.
                 # We only need to iterate over the original list, because no split off lines will reintersect this edge.
-                for split_line_index in [split_lines_start_index...split_lines.length] by 1
-                  line = split_lines[split_line_index]
+                for split_line_index in [split_lines_start_index...input_polylines_split_thus_far.length] by 1
+                  line = input_polylines_split_thus_far[split_line_index]
                   # Check for a collision.
                   if line.detect_intersection_with_polyline(line2)
 
@@ -1067,11 +1072,11 @@ class SCRIB.PolylineGraphPostProcessor
                     # Split the point, so that future intersections will have the appropriate start and end points.
 
                     [old_line, new_line] = line.splitPolyline(vert_point, vert_index)
-                    split_lines[split_line_index] = old_line # We shrink the current line and continue to check for intersections.
+                    input_polylines_split_thus_far[split_line_index] = old_line # We shrink the current line and continue to check for intersections.
                     old_end_vert = split_verts[split_line_index*2 + 1]
                     split_verts[split_line_index*2 + 1] = i_vert # Update the end vert to the intersection vert.
 
-                    split_lines.push(new_line) # We check for intersections with the new line at a later time.
+                    input_polylines_split_thus_far.push(new_line) # We check for intersections with the new line at a later time.
                     split_verts.push(i_vert)
                     split_verts.push(old_end_vert)
 
@@ -1088,13 +1093,83 @@ class SCRIB.PolylineGraphPostProcessor
                     if face1 != face2
                         face2.data.info.generateBVH()
 
-        # Now that the original graph has been properly split, and we have split up the input segments,
-        # we can now link up the split embeded polyline.
-        for index in [0...split_verts.length] by 2
-            v1 = split_verts[index]
-            v2 = split_verts[index + 1]
 
-            linker.link_verts(v1, v2)
+
+
+        # -- Handling self-intersections, we now split the subdivided lines wherever two of them cross.
+
+        # Commonly indexed points and topology vertices.
+        # We will remap all of the relevant vertices to a 0-indexed array of points, so that we can use BDS.Lines
+        # that may be used with a BDS.Intersector object.
+        link_points = []
+        link_verts  = []
+
+        # Keep track of which verts we have added already to avoid duplicates.
+        link_vert_map = {}
+        # An array of BDS.Lines used for intersection finding.
+        i_lines = []
+        
+        # Create the intersection lines, while updating the point -> vert map.
+        for index in [0...input_polylines_split_thus_far.length] by 1
+            v1 = split_verts[index*2]
+            v2 = split_verts[index*2 + 1]
+
+            # Ensure that the vert map contains the points at these vertices.
+            if not link_vert_map[v1.id]
+                link_vert_map[v1.id] = link_points.length
+                link_points.push(v1.data.point)
+                link_verts.push(v1)
+
+            if not link_vert_map[v2.id]
+                link_vert_map[v2.id] = link_points.length
+                link_points.push(v2.data.point)
+                link_verts.push(v2)
+
+            i1 = link_vert_map[v1.id]
+            i2 = link_vert_map[v2.id]
+
+            i_line = new BDS.Line(i1, i2, link_points)
+            i_lines.push(i_line)
+
+        # The index of the first point of self-intersection that may be found.
+        start_index_self_intersections_found = link_points.length
+        # Now perform the intersection search.
+        intersector = new BDS.Intersector()
+        # FIXME: For now since we still have some numerical difficulties, we will use brute force.
+        #intersector.intersect_brute_force(i_lines)
+        intersector.intersectLineSegments(i_lines)
+
+        # Create vertices for all of the new points of self-intersection.
+        # that were found in using the intersector.
+        while link_verts.length < link_points.length
+            index = link_verts.length
+            pt = link_points[index]
+            vert = generator.newVertex()
+            vert.data.point = pt
+            link_verts.push(vert)
+
+        # Link up all the link vertices via the results form the intersections.
+        for i_line in i_lines
+            # all indices including start, self-intersections in order, then end.
+            isect_indices = i_line.getAllIndiciesOrdered()
+
+            console.log(isect_indices)
+
+            # Iteratively link of vertex elements.
+            for i in [0...isect_indices.length - 1] by 1
+
+                # Indices in link_pt space.
+                index1 = isect_indices[i]
+                index2 = isect_indices[i + 1]
+
+                # find real verts using link_verts mapping array.
+                vert1 = link_verts[index1]
+                vert2 = link_verts[index2]
+
+                console.log(vert1.id + " -> " + vert2.id)
+
+                # finnally link the verts together topologically.
+                linker.link_verts(vert1, vert2)
     
         # Update Collision Detection and Onscreen Rendering structures.
         @_face_vector = []

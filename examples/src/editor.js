@@ -35,7 +35,7 @@ function main()
          true);
 
     // We start with an empty graph.
-    var graph    = embedder.embedPolylineArray([line1, line2]);
+    var graph    = new SCRIB.Graph();//embedder.embedPolylineArray([line1, line2]);
 
     // The Post Processor eats graphs for breakfast and provides
     // algorithmic modification function that will be used in the various editor tools.
@@ -108,8 +108,9 @@ function main()
         var saver = new svg_saver();
         saver.start_svg();
 
+        var canvas = document.getElementById("theCanvas");
         var bb = new BDS.Box(new BDS.Point(0,   0),
-                             new BDS.Point(500, 500));
+                             new BDS.Point(canvas.width - 1, canvas.height - 1));
 
         saver.setBoundingBox(bb);
 

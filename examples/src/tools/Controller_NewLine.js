@@ -96,7 +96,7 @@ Controller_NewLine.prototype =
 
         // Non-starting point.
         this.lastPoint = this.currentPoint;
-        this.currentPoint = new BDS.Point(x, y);
+        this.currentPoint = new BDS.Point(x + Math.random(), y + Math.random());
         this.current_line.addPoint(this.currentPoint);
     },
 
