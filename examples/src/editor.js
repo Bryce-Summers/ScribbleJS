@@ -35,7 +35,8 @@ function main()
          true);
 
     // We start with an empty graph.
-    var graph    = new SCRIB.Graph();//embedder.embedPolylineArray([line1, line2]);
+    var graph    = embedder.embedPolylineArray([line1, line2]);
+     //new SCRIB.Graph();
 
     // The Post Processor eats graphs for breakfast and provides
     // algorithmic modification function that will be used in the various editor tools.
