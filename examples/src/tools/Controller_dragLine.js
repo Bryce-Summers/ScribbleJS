@@ -1,12 +1,13 @@
 /*
- * New Line Embedding Controller.
+ * Drag Line Embedding Controller.
  * Moved here by Bryce Summers on 4.4.2017
  *
- * Logic for a simple polyline drawing tool that is then embedded into a HalfEdgeGraph using a 
+ * Logic for a polyline drawing tool based on dragging a mouse 
+ * that is then embedded into a HalfEdgeGraph using a 
  * SCRIB.PolylinePostProcessor object.
  */
 
-function Controller_NewLine(postProcessor, graphics)
+function Controller_dragLine(postProcessor, graphics)
 {
     // The circle that follows the mouse.
     this.radius = 5;
@@ -36,7 +37,7 @@ function Controller_NewLine(postProcessor, graphics)
     this._graph = this.postProcessor.getCurrentGraph();
 }
 
-Controller_NewLine.prototype =
+Controller_dragLine.prototype =
 {
     setActive(isActive)
     {
@@ -67,53 +68,45 @@ Controller_NewLine.prototype =
         var x = event.x;
         var y = event.y;
 
-        // -- Start a line.
+        // -- Start a line when the user presses the mouse.
 
-        if(this.current_line === null)
-        {
-            this.current_line = new BDS.Polyline(false);
-            this.lines.push(this.current_line);
+        this.current_line = new BDS.Polyline(false);
+        this.lines.push(this.current_line);
             
-            this.lastPoint = new BDS.Point(x, y);
-            this.current_line.addPoint(this.lastPoint);
-
-            this.currentPoint = new BDS.Point(x, y);
-            this.current_line.addPoint(this.currentPoint);
-            return;
-        }
-
-        // Stop line drawing upon double click.
-        var dx = event.x - this.lastPoint.x;
-        var dy = event.y - this.lastPoint.y;
-        if(Math.abs(dx) + Math.abs(dy) < 4)
-        {
-            this.current_line.removeLastPoint();
-            this.embedLine(this.current_line);
-
-            this.finish();
-            return;
-        }
-
-        // Non-starting point.
-        this.lastPoint = this.currentPoint;
-        this.currentPoint = new BDS.Point(x + Math.random(), y + Math.random());
-        this.current_line.addPoint(this.currentPoint);
+        this.lastPoint = new BDS.Point(x, y);
+        this.current_line.addPoint(this.lastPoint);
     },
 
     mouse_up(event)
     {
         this.mouse_pressed = false;
+        this.embedLine(this.current_line);
+        this.finish();
     },
 
     mouse_move(event)
     {
+
         // Move the circle centered on the new mouse position.
         this.mouse_circle.setPosition(event.x, event.y);
 
-        if(this.current_line !== null)
+        if(!this.mouse_pressed)
         {
-            this.currentPoint.x = event.x + Math.random();
-            this.currentPoint.y = event.y + Math.random();
+            return;
+        }
+
+        // Add points to the line 4 pixels spaced apart.
+        var x = event.x;
+        var y = event.y;
+
+        var dx = x - this.lastPoint.x;
+        var dy = y - this.lastPoint.y;
+
+        if(Math.abs(dx) + Math.abs(dy) > 4)
+        {
+            var pt = new BDS.Point(x + Math.random(), y + Math.random());
+            this.lastPoint = pt;
+            this.current_line.addPoint(pt);
         }
         
     },
@@ -133,7 +126,7 @@ Controller_NewLine.prototype =
         this._G_canvas.drawCircle(this.mouse_circle);
 
         // Draw fancy verts over top of the graph.
-        this._G_graph.drawVerts(this._graph);
+        //this._G_graph.drawVerts(this._graph);
     },
 
     drawVerts()

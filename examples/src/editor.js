@@ -58,7 +58,10 @@ function main()
     // -- Tools Controllers.
     var controller_eraser       = new Controller_Eraser(postProcessor, graph_G);
     controller_eraser.setActive(false);
-    var controller_line_drawing = new Controller_NewLine(postProcessor, graph_G);
+    var controller_click_line = new Controller_clickLine(postProcessor, graph_G);
+    controller_click_line.setActive(false);
+    var controller_drag_line  = new Controller_dragLine(postProcessor, graph_G);
+    controller_drag_line.setActive(true);
 
 
     // -- Tools UI.
@@ -71,19 +74,43 @@ function main()
     var b3 = new BDS.Box(new BDS.Point(128,   0),
                          new BDS.Point(192, 64));
 
+    var b4 = new BDS.Box(new BDS.Point(192,   0),
+                         new BDS.Point(256, 64));
+
     var p1 = b1.toPolyline();
     var p2 = b2.toPolyline();
     var p3 = b3.toPolyline();
+    var p4 = b4.toPolyline();
 
     var header       = document.getElementById("header");
     var instructions = document.getElementById("instructions");
 
-    function func_line_tool()
+    function deactivate()
     {
         controller_eraser.setActive(false);
-        controller_line_drawing.setActive(false);
+        controller_click_line.setActive(false);
+        controller_drag_line.setActive(false);   
+    }
 
-        controller_line_drawing.setActive(true);
+    function func_click_line_tool()
+    {
+        controller_eraser.setActive(false);
+        controller_click_line.setActive(false);
+        controller_drag_line.setActive(false);
+
+        controller_click_line.setActive(true);
+
+        header.innerHTML       = "Tool Selected - Line Creation Tool Selected"
+        instructions.innerHTML = "Eraser Tool: click your mous at differenct positions to draw a line. Click two times at the same position to finish the line.";
+    }
+
+    function func_drag_line_tool()
+    {
+        controller_eraser.setActive(false);
+        controller_click_line.setActive(false);
+        controller_drag_line.setActive(false);
+
+        controller_drag_line.setActive(true);
 
         header.innerHTML   = "Tool Selected - Line Creation Tool Selected"
         instructions.innerHTML = "Eraser Tool: Click and move your mouse to draw lines. Double click to end a line.";
@@ -92,7 +119,8 @@ function main()
     function func_eraser_tool()
     {
         controller_eraser.setActive(false);
-        controller_line_drawing.setActive(false);
+        controller_click_line.setActive(false);
+        controller_drag_line.setActive(false);
 
         controller_eraser.setActive(true);
 
@@ -104,7 +132,8 @@ function main()
     function func_save()
     {
         controller_eraser.setActive(false);
-        controller_line_drawing.setActive(false);
+        controller_click_line.setActive(false);
+        controller_drag_line.setActive(false);
 
         var saver = new svg_saver();
         saver.start_svg();
@@ -160,21 +189,24 @@ function main()
         saver.generate_svg("scribble");
     }
 
-    var img_eraser = document.getElementById("eraser_tool");
-    var img_line   = document.getElementById("line_tool");
-    var img_save   = document.getElementById("save_tool");
+    var img_eraser     = document.getElementById("eraser_tool");
+    var img_click_line = document.getElementById("click_line_tool");
+    var img_drag_line  = document.getElementById("drag_line_tool");
+    var img_save       = document.getElementById("save_tool");
 
     // We put the line drawing button first to encourage people to use it.
-    controller_ui.createButton(p1, func_line_tool, img_line);
-    controller_ui.createButton(p2, func_eraser_tool, img_eraser);
-    controller_ui.createButton(p3, func_save, img_save);
+    controller_ui.createButton(p1, func_click_line_tool, img_click_line);
+    controller_ui.createButton(p2, func_drag_line_tool, img_drag_line);
+    controller_ui.createButton(p3, func_eraser_tool, img_eraser);
+    controller_ui.createButton(p4, func_save, img_save);
 
     // Layer 1: Clear the screen and draw the graph.
     root_input.add_universal_controller(controller_draw);
 
     // Layer 2: Tool's
     root_input.add_universal_controller(controller_eraser);
-    root_input.add_universal_controller(controller_line_drawing);
+    root_input.add_universal_controller(controller_click_line);
+    root_input.add_universal_controller(controller_drag_line);
 
     // Layer 3: User Interface.
     root_input.add_universal_controller(controller_ui);

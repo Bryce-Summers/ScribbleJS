@@ -1153,7 +1153,7 @@ class SCRIB.PolylineGraphPostProcessor
             # all indices including start, self-intersections in order, then end.
             isect_indices = i_line.getAllIndiciesOrdered()
 
-            console.log(isect_indices)
+            #console.log(isect_indices)
 
             # Iteratively link of vertex elements.
             for i in [0...isect_indices.length - 1] by 1
@@ -1166,7 +1166,7 @@ class SCRIB.PolylineGraphPostProcessor
                 vert1 = link_verts[index1]
                 vert2 = link_verts[index2]
 
-                console.log(vert1.id + " -> " + vert2.id)
+                #console.log(vert1.id + " -> " + vert2.id)
 
                 # finnally link the verts together topologically.
                 linker.link_verts(vert1, vert2)
