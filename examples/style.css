@@ -11,7 +11,7 @@ body {
     overflow: hidden;
 
     /* these all go together to ensure bounded centered page. */
-    max-width: 900px;
+    max-width: 1200px;
     margin-left: auto;
     margin-right: auto;
     /* ----------- */
