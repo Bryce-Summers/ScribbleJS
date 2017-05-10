@@ -77,10 +77,14 @@ function main()
     var b4 = new BDS.Box(new BDS.Point(192,   0),
                          new BDS.Point(256, 64));
 
+    var b5 = new BDS.Box(new BDS.Point(256,   0),
+                         new BDS.Point(320, 64));
+
     var p1 = b1.toPolyline();
     var p2 = b2.toPolyline();
     var p3 = b3.toPolyline();
     var p4 = b4.toPolyline();
+    var p5 = b5.toPolyline();
 
     var header       = document.getElementById("header");
     var instructions = document.getElementById("instructions");
@@ -94,46 +98,38 @@ function main()
 
     function func_click_line_tool()
     {
-        controller_eraser.setActive(false);
-        controller_click_line.setActive(false);
-        controller_drag_line.setActive(false);
+        deactivate();
 
         controller_click_line.setActive(true);
 
-        header.innerHTML       = "Tool Selected - Line Creation Tool Selected"
-        instructions.innerHTML = "Eraser Tool: click your mous at differenct positions to draw a line. Click two times at the same position to finish the line.";
+        header.innerHTML       = "Tool: Rigid Polyline Tool"
+        instructions.innerHTML = "Click your mouse at positions to draw a line. Click two times at the same position to finish the line.";
     }
 
     function func_drag_line_tool()
     {
-        controller_eraser.setActive(false);
-        controller_click_line.setActive(false);
-        controller_drag_line.setActive(false);
+        deactivate();
 
         controller_drag_line.setActive(true);
 
-        header.innerHTML   = "Tool Selected - Line Creation Tool Selected"
-        instructions.innerHTML = "Eraser Tool: Click and move your mouse to draw lines. Double click to end a line.";
+        header.innerHTML   = "Tool: Freeform Lines"
+        instructions.innerHTML = "Click and move your mouse to draw lines. Double click to end a line.";
     }
 
     function func_eraser_tool()
     {
-        controller_eraser.setActive(false);
-        controller_click_line.setActive(false);
-        controller_drag_line.setActive(false);
+        deactivate();
 
         controller_eraser.setActive(true);
 
-        header.innerHTML   = "Tool Selected - Eraser Tool"
-        instructions.innerHTML = "Line Tool: Click and Drag your mouse to delete elements.";
+        header.innerHTML   = "Tool: Eraser"
+        instructions.innerHTML = "Click and Drag your mouse to delete elements.";
     }
 
     // http://stackoverflow.com/questions/2897619/using-html5-javascript-to-generate-and-save-a-file
-    function func_save()
+    function func_save_svg()
     {
-        controller_eraser.setActive(false);
-        controller_click_line.setActive(false);
-        controller_drag_line.setActive(false);
+        deactivate();
 
         var saver = new svg_saver();
         saver.start_svg();
@@ -189,16 +185,34 @@ function main()
         saver.generate_svg("scribble");
     }
 
+    function func_save_png()
+    {
+        deactivate();
+
+        // Don't draw any of the UI elements,
+        // so that we don't cloud the output with buttons.
+        controller_draw.drawOnlyIllustration();
+
+        var canvas = document.getElementById("theCanvas");
+        url = canvas.toDataURL();
+
+        saver = new svg_saver();
+        saver.downloadURL("scribble.png", url);
+
+    }
+
     var img_eraser     = document.getElementById("eraser_tool");
     var img_click_line = document.getElementById("click_line_tool");
     var img_drag_line  = document.getElementById("drag_line_tool");
-    var img_save       = document.getElementById("save_tool");
+    var img_save_svg   = document.getElementById("save_svg_tool");
+    var img_save_png   = document.getElementById("save_png_tool");
 
     // We put the line drawing button first to encourage people to use it.
     controller_ui.createButton(p1, func_click_line_tool, img_click_line);
     controller_ui.createButton(p2, func_drag_line_tool, img_drag_line);
     controller_ui.createButton(p3, func_eraser_tool, img_eraser);
-    controller_ui.createButton(p4, func_save, img_save);
+    controller_ui.createButton(p4, func_save_svg, img_save_svg);
+    controller_ui.createButton(p5, func_save_png, img_save_png);
 
     // Layer 1: Clear the screen and draw the graph.
     root_input.add_universal_controller(controller_draw);
@@ -210,6 +224,9 @@ function main()
 
     // Layer 3: User Interface.
     root_input.add_universal_controller(controller_ui);
+
+    // Start in Drag line mode!
+    func_drag_line_tool()
 
     // Begin the Amazing Experience!
     beginTime();

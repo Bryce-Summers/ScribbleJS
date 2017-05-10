@@ -71,6 +71,16 @@ Controller_Draw.prototype =
         //this._G_graph.drawEdgeInfoArray(this.halfedges);
     },
 
+    drawOnlyIllustration()
+    {
+        // Clear the screen for new drawing.
+        this._G_canvas.clearScreen();
+
+        // Draw the faces to the screen.
+        var faces = this.postProcessor.generate_faces_info();
+        this._G_graph.drawFaceInfoArray(faces);
+    },
+
     window_resize(event)
     {
 

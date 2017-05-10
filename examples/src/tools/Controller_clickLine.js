@@ -134,7 +134,7 @@ Controller_clickLine.prototype =
         this._G_canvas.drawCircle(this.mouse_circle);
 
         // Draw fancy verts over top of the graph.
-        this._G_graph.drawVerts(this._graph);
+        //this._G_graph.drawVerts(this._graph);
     },
 
     drawVerts()

@@ -149,4 +149,27 @@ svg_saver.prototype =
             pom.click();
         }
     },
+
+    // Requires a filename with extension.
+    // URL String.
+    downloadURL(filename, url)
+    {
+        // Creates a link element.
+        var pom = document.createElement('a');
+
+        // Sets its targert to be a url data encoded string.
+        pom.setAttribute('href', url);
+        pom.setAttribute('download', filename);
+
+        // Artificially triggers a user clicking the link.
+        // to trigger the download automatically.
+        if (document.createEvent) {
+            var event = document.createEvent('MouseEvents');
+            event.initEvent('click', true, true);
+            pom.dispatchEvent(event);
+        }
+        else {
+            pom.click();
+        }
+    },
 }
