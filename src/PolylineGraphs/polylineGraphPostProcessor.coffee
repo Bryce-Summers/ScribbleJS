@@ -291,6 +291,8 @@ class SCRIB.Face_Info
 
         return output_list
 
+    # Nested Topology / Internal Continant functions.
+
     # Adds a hole to this face info.
     addHole: (polyline) ->
         @face.data.hole_polylines.push(polyline)
@@ -1210,6 +1212,50 @@ class SCRIB.PolylineGraphPostProcessor
 
     # BDS.Geometry, Halfedge_Info[] (Optional) -> SCRIB.Halfedge_Info[]
     query_edges_in_geometry: (geom, output) ->
+
+        edges = @query_halfedges_in_box(geom.generateBoundingBox())
+
+        for halfedge in edges
+
+            polyline = halfedge.polyline
+
+            if geom.detect_intersection_with_polyline(polyline)
+                output.push(geom)
+
+        return output
+
+    # BDS.Box -> SCRIB.Halfedge_Info[]
+    query_halfedges_in_box: (box, output) ->
+
+        faces = @query_faces_in_box(box);
+
+        if output == undefined
+            output = []
+
+        for face in faces
+            # All halfedges in the bounding box.
+            face.query_halfedges_in_box(box, output)
+
+        return output
+
+    ###
+    # Graph wide Edge Queries.
+    # Returns all elements in the graph within the given regions.
+    # NOTE: If you already have faces found, it will be better to use the Face_Info query functions.
+    # Note: Edge queries are implemented by first performing a face query
+    # and then performing edge queries on those face's edge bvh's in the Face_Info objects.
+    ###
+
+    # BDS.Circle, Halfedge_Info[] (Optional) -> SCRIB.Halfedge_Info[]
+    query_vertices_in_circle: (circle, output) ->
+        return @query_edges_in_geometry(circle, output)
+
+    # BDS.Polyline, Halfedge_Info[] (Optional) -> SCRIB.Halfedge_Info[]
+    query_vertices_in_polyline: (polyline, output) ->
+        return @query_edges_in_geometry(polyline, output)
+
+    # BDS.Geometry, Halfedge_Info[] (Optional) -> SCRIB.Halfedge_Info[]
+    query_vertices_in_geometry: (geom, output) ->
 
         edges = @query_halfedges_in_box(geom.generateBoundingBox())
 

@@ -62,7 +62,8 @@ function main()
     controller_click_line.setActive(false);
     var controller_drag_line  = new Controller_dragLine(postProcessor, graph_G);
     controller_drag_line.setActive(true);
-
+    var controller_verts  = new Controller_Verts(postProcessor, graph_G);
+    controller_verts.setActive(false);
 
     // -- Tools UI.
     var b1 = new BDS.Box(new BDS.Point(0,   0),
@@ -80,11 +81,15 @@ function main()
     var b5 = new BDS.Box(new BDS.Point(256,   0),
                          new BDS.Point(320, 64));
 
+    var b6 = new BDS.Box(new BDS.Point(320,   0),
+                         new BDS.Point(384, 64));
+
     var p1 = b1.toPolyline();
     var p2 = b2.toPolyline();
     var p3 = b3.toPolyline();
     var p4 = b4.toPolyline();
     var p5 = b5.toPolyline();
+    var p6 = b6.toPolyline();
 
     var header       = document.getElementById("header");
     var instructions = document.getElementById("instructions");
@@ -93,7 +98,8 @@ function main()
     {
         controller_eraser.setActive(false);
         controller_click_line.setActive(false);
-        controller_drag_line.setActive(false);   
+        controller_drag_line.setActive(false);
+        controller_verts.setActive(false);
     }
 
     function func_click_line_tool()
@@ -114,6 +120,16 @@ function main()
 
         header.innerHTML   = "Tool: Freeform Lines"
         instructions.innerHTML = "Click and move your mouse to draw lines. Double click to end a line.";
+    }
+
+    function func_vert_tool()
+    {
+        deactivate();
+
+        controller_verts.setActive(true);
+
+        header.innerHTML   = "Tool: Vert Moving"
+        instructions.innerHTML = "Click and drag a vertex circle to modify its position.";
     }
 
     function func_eraser_tool()
@@ -204,6 +220,7 @@ function main()
     var img_eraser     = document.getElementById("eraser_tool");
     var img_click_line = document.getElementById("click_line_tool");
     var img_drag_line  = document.getElementById("drag_line_tool");
+    var img_vert_tool  = document.getElementById("vert_tool");
     var img_save_svg   = document.getElementById("save_svg_tool");
     var img_save_png   = document.getElementById("save_png_tool");
 
@@ -211,8 +228,9 @@ function main()
     controller_ui.createButton(p1, func_click_line_tool, img_click_line);
     controller_ui.createButton(p2, func_drag_line_tool, img_drag_line);
     controller_ui.createButton(p3, func_eraser_tool, img_eraser);
-    controller_ui.createButton(p4, func_save_svg, img_save_svg);
-    controller_ui.createButton(p5, func_save_png, img_save_png);
+    controller_ui.createButton(p4, func_vert_tool, img_vert_tool);
+    controller_ui.createButton(p5, func_save_svg, img_save_svg);
+    controller_ui.createButton(p6, func_save_png, img_save_png);
 
     // Layer 1: Clear the screen and draw the graph.
     root_input.add_universal_controller(controller_draw);
@@ -221,6 +239,7 @@ function main()
     root_input.add_universal_controller(controller_eraser);
     root_input.add_universal_controller(controller_click_line);
     root_input.add_universal_controller(controller_drag_line);
+    root_input.add_universal_controller(controller_verts);
 
     // Layer 3: User Interface.
     root_input.add_universal_controller(controller_ui);
